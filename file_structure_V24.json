@@ -1,0 +1,207 @@
+{
+	"Version": "1.0.0",
+	"Feed": {
+		"Id": "determines Id of a feed, should be Integer only",
+		"ProviderId": "determines provider of data,should be Integer only,use 62",
+		"Name": "determines name of a feed based on Data Context and ProviderName",
+		"Description": "determines description of a feed based on data context",
+		"ImportFrequencyId": "should be determined based on customer's preferences; 1 - Daily,2 - Monthly, 3 - Yearly, 4 - Hourly, 5 - Weekly, 6 - Quarterly",
+		"Schema": "set to 'beta'",
+		"ImportStoredProcedure": "set to null by default",
+		"IsCreatedManually": "set to false by default",
+		"ValidatorExe": "set to null by default",
+		"MapStoredProcedure": "set to null by default",
+		"UseGenericImporter": "set to true by default",
+		"UseGenericValidator": "set to true by default",
+		"UseGenericMapper": "set to true by default",
+		"IsManualValidationEnabled": "set to false by default",
+		"IsWaitForManualValidation": "set to false by default",
+		"IsAdjustingCorrectValues": "set to false by default",
+		"AlwaysIncremental": "set to false by default",
+		"UseGenericAuthorizer": "set to true by default",
+		"AuthorizeStoredProcedure": "set to null by default",
+		"FileDefinitions": [
+			{
+				"FileTypeId": "If file type is CSV/text then 1, If file type is xml then 2, If file type is json then 3, If file type is excel then 4,sohuld be Integer",
+				"Name": "set to null by default",
+				"FileNameRegex": "here you should use RegEx pattern syntax to validate a name of a file",
+				"FileNameRegexDescription": "describe FileNameRegex pattern that was built previously",
+				"CsvDelimiterCharacter": "here you should identify a delimiter character of a CSV file",
+				"HasHeader": "set to null by default",
+				"SubsetGroupNumber": "set to null by default",
+				"DynamicColumnCount": "set to true by default",
+				"DefaultColumnNamePrefix": "set to null by default",
+				"TrimWhiteSpaces": "removes leading and trailing white spaces. Usually set to true",
+				"AdvancedEscapingEnabled": "set to true by default",
+				"QuoteCharacter": "set to null by default",
+				"DoubleQuoteEscapingEnabled": "set to true by default",
+				"ColumnHeaderTypeSeparator": "here you should identify a column header separator of a CSV file",
+				"ReadHeaders": "true by default, if no headers presented in a file then false",
+				"CheckHeaders": "true by default,if all headers from the file are presented",
+				"CheckUnexpectedHeaders": "set to true by default",
+				"UseEmbargoDateTime": "set to false by default",
+				"EmbargoDateTimeComposite": "set to null by default",
+				"IgnoreColumnsWithEmptyHeader": "set to true by default",
+				"SkipEmptyLines": "set to true by default",
+				"SkipFirstNumberOfLines": "should determine number of lines which are not related to headers and headers' data; if first lines are empty and there is no data, skip them and put the number of lines you skipped ",
+				"EndOfFileRegex": "determine the end of Regex file, based on regex syntax",
+				"CheckZippedFileNameByRegex": "set to false by default",
+				"DefaultMicrosoftStandardTimeZoneId": "set to null by default",
+				"NumberDecimalSeparator": "here you should determine a separator of decimal values; could be dot or comma, still based on CSV file",
+				"NumberGroupSeparator": "set to null by default",
+				"RootXPath": "set to null by default",
+				"XmlNamespaces": "should be constructed as alias=namespace, example: d=\"<namespace>\"",
+				"RootJsonPath": "do not set root path here, set it under NodeXPath below, set to null by default",
+				"DetectEncoding": "set to false by default",
+				"SheetNumber": "only used for excel data type. fill  in as number of tab you currently take a data from,otherwise null",
+				"SortOrder": null,
+				"TableDefinitions": [
+					{
+						"TableName": "name of a table to import data to; can be generated based on data context as general name",
+						"NodeXPath": "generate it for xml data types,otherwise null. Fill in the root path to a parent first-level node(xpath) for which a table should be created, null by default for other file types",
+						"NodeJsonPath": "generate it for json data types,otherwise null. Fill in the root path to a parent first level node for which a table should be created, null by default for other file types",
+						"SqlQuery": null,
+						"ChildTableDefinitions": [
+						],
+						"ColumnDefinitions": [
+							{
+								"HeaderName": "here you should fill in a name of a column header which is presented within a [biqh_import_field]",
+								"SampleData": "fill in single value example of corresponding column",
+								"Name": "here you should fill in a name of a column header which is presented within a [customer_field]",
+								"DataTypeId": "here you should determine a data type based on determination of it previously within [biqh_column_data_type]; Please map it according to the list: 1-nvarchar,2-Int;3-decimal;4-date;5-datetime;6-time;7-boolean;8-bigint;9-binary;10-any;",
+								"Length": "you should use it for data type 1 or 10 and determine a length of string column you already determined previously,otherwise null",
+								"Precision": "you should use it for data type 3 and determine a precision part of decimal column you already determined previously,otherwise null",
+								"Format": "The expected data format used only  for date and time columns, specified in a standard format string",
+								"Description": "description of a column header based on financial knowledge you have",
+								"Scale": "you should use it for data type 3 and determine a scale part of decimal column you already determined previously,otherwise null",
+								"AllowLeadingWhite": "always set to false by default",
+								"AllowTrailingWhite": "always set to false by default",
+								"AllowLeadingSign": "you should use it for data type 3 and determine if a decimal value contains leading sign (if yes - true) otherwise set to false by default",
+								"AllowTrailingSign": "you should use it for data type 3 and determine if a decimal value contains trailing sign (if yes - true) otherwise set to false by default",
+								"AllowParentheses": "you should use it for data type 3 and determine if a decimal value contains parentheses (if yes - true) otherwise false",
+								"AllowDecimalPoint": "you should use it for data type 3 and determine if a decimal value contains decimal point after main decimal separator (if yes - true) otherwise false;",
+								"AllowThousands": "set to false by default",
+								"AllowExponent": "you should use it for data type 3 and determine if a decimal value contains Exponent sign (if yes - true) otherwise false;",
+								"AllowCurrencySymbol": "you should use it for data type 3 and determine if a decimal value contains Currency symbol sign (if yes - true) otherwise false;",
+								"AllowPercentage": "you should use it for data type 3 and determine if a decimal value contains percentage symbol sign (if yes - true) otherwise false;",
+								"CultureInfo": "If specified, indicates the cultural or regional formatting rules that apply to the data, affecting aspects like date formats or numeric separators,otherwise null",
+								"ColumnTypeId": "If file type is xml use '5'; if file type is json use '6' else 1-Column Number(Is used when CSV/Excel/Text files do not contain headers, 'ColumnNumber' attribute should contain a correct sequence number in order to correctly read columns of a file; 2-Column Header (is used when CSV/Excel/Text files contain headers); 3- Composite field",
+								"Start": "set to null by default",
+								"End": "set to null by default",
+								"ColumnNumber": "required field;fill in based on sequential number of a column in a file (starts from 0)",
+								"Script": "set to null by default",
+								"UseInnerXml": "set to false by default",
+								"XPath": "generate for xml data types,otherwise null.Fill in  xpath to a second level node from which value should be extracted to the corresponding column taking into account NodeXpath root filled in previously, null by default for other data types",
+								"JsonPath": "generate for json data types,otherwise null.Fill in  path to a second level node from which value should be extracted to the corresponding column taking into account NodeJsonpath root filled in previously, null by default for other data types",
+								"NullAliases": "set to null by default",
+								"Multiplier": "set to null by default",
+								"TrueAliases": "set to null by default",
+								"FalseAliases": "set to null by default",
+								"SourceName": "Fill in the column's header from the file",
+								"RetrievalStatisticsEnabled": "set to false by default",
+								"Validations": [
+									{
+										"ValidationTypeId": "you should fill in validation per column you added: If column from the analysis file is always filled then put 1 - NotEmpty; if column from the analysis file is determined as Isin then put 3 - IsIsin;if column from the analysis file is determined as Currency and length of it = 3  then put 4 - IsCurrency,if column from the analysis file is determined as nvarchar data type then put 10 - MaxLength, otherwise null",
+										"Parameter": "you should fill in parameters like: for  string column - length of nvarchar determined by analysis file",
+										"Message": "set to null by default",
+										"Condition": "set to null by default",
+										"IsError": "set to true by default",
+										"IsTechnical": "set to true by default"
+									},
+									{
+										"ValidationTypeId": "Optional validations, could be more than one per column, define based on description provided for ValidationTypeId previously",
+										"Parameter": "you should fill in parameters like: for  string column - length of nvarchar determined by analysis file",
+										"Message": "set to null by default",
+										"Condition": "set to null by default",
+										"IsError": "set to true by default",
+										"IsTechnical": "set to true by default"
+									}
+								]
+							}
+						],
+						"IndexDefinitions": [
+						]
+					}
+				]
+			}
+			
+		],
+		"MapDefinitions": [
+			{
+				"Name": null,
+				"Description": null,
+				"UseTransaction": true,
+				"UseSubsetKey": false,
+				"BatchSize": 0,
+				"BiqhTableMaps": [
+					{
+						"_allowDeletes": {
+							"Value": null,
+							"HasValue": true
+						},
+						"_allowDeletesPolicyId": {
+							"Value": null,
+							"HasValue": true
+						},
+						"BiqhTableName": "name of [biqh_parent_table_name] table and [biqh_relation_table_name] table that SQL query is used for to merge data. PER TABLE!",
+						"SortOrder": 8,
+						"SqlQuery": "SQL query to map data based on mapping file: where [biqh_import_field] is mapped per BIQH column in [biqh_parent_column_name] per  table from [biqh_parent_table_name] and [biqh_relation_table_name]; --Starting from \n\t SELECT DISTINCT r.[customer_field] AS [biqh_parent_column_name], ... \n\t FROM\n\t@Schema.[table name from FileDefinition] ae  --could have joins IF [biqh_relation_table_name] is filled \n\t  \n --ending with default filtering like ->  WHERE\n\tae.Record_ImportId = @ImportId\n\tAND ae.Record_HasError = 0\n",
+						"UseBiql": false,
+						"BiqlQuery": null,
+						"IsMergeStatement": true,
+						"UseSubsetKey": null,
+						"AllowDeletesPolicyId": null,
+						"BiqhTableColumnMaps": null,
+						"DelayTypeMaps": []
+					}
+				]
+			}
+						
+		],
+		"RowMapDefinitions": [
+			{
+				"Name": null,
+				"Description": null,
+				"UseTransaction": true,
+				"UseSubsetKey": false,
+				"BatchSize": 0,
+				"BiqhTableRowMaps": [
+					{
+						"BiqhTableName": "name of [biqh_parent_table_name] and [biqh_relation_table_name]",
+						"SortOrder": "integer starting from 0",
+						"SqlQuery": "leave empty",
+						"Description": null,
+						"IsMergeStatement": false,
+						"UseSubsetKey": null,
+						"AllowDeletes": null,
+						"BiqhTableRowMapRowLinkSets": [
+						]
+					}
+
+				]
+			}
+		],
+		"AuthorizeDefinitions": [
+			{
+				"Name": null,
+				"Description": null,
+				"UseTransaction": true,
+				"UseSubsetKey": false,
+				"BatchSize": 0,
+				"BiqhTableAuthorizeMaps": [
+					{
+						"BiqhTableName": "name of [biqh_parent_table_name] and [biqh_relation_table_name]",
+						"SortOrder": "integer starting from 0",
+						"Description": null,
+						"IsMergeStatement": true,
+						"UseSubsetKey": null,
+						"AllowDeletes": null,
+						"AuthorizeForProvider": true,
+						"BiqhTableAuthorizeMapForTables": [
+						]
+					}
+				]
+			}
+		]
+	}
+}
