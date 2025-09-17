@@ -47,6 +47,7 @@ import argparse
 import json
 import os
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -58,13 +59,13 @@ import pandas as pd
 # =====================
 DEFAULTS = {
     "template": "file_structure_V24.json",
-    "mapping": "mtge_ref_mapping.csv",  # optional
-    "vendor_file": "mtge_cmbs_namr.out.20250715",
-    "feed_id": 9991,
-    "feed_name": "test_feed_creation_v2",
-    "provider_id": 61,
+    "mapping": "cds_liquidity_metrics_mapping.csv",  # optional
+    "vendor_file": "CDS_T1_LIQUIDITY_METRICS-202503.xlsx",
+    "feed_id": 395,
+    "feed_name": "ABN MRDS Markit CDS Liquidity Metrics",
+    "provider_id": 279,
     "import_frequency_id": 1,
-    "schema": "beta",
+    "schema": "abncdsliquid",
     "out_dir": ".",
     # Optional SQL Server connection string to IntBIQHModel.
     # Example (Windows Auth): DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;DATABASE=IntBIQHModel;Trusted_Connection=yes;Encrypt=no
@@ -88,7 +89,219 @@ ENV_MAP = {
 DATA_TYPE_MAP = {
     "nvarchar": 1, "int": 2, "decimal": 3, "date": 4, "datetime": 5,
     "time": 6, "boolean": 7, "bit": 7, "bigint": 8, "binary": 9, "varbinary": 9, "any": 10,
+    # numeric aliases
+    "numeric": 3, "number": 3, "money": 3, "smallmoney": 3, "float": 3, "double": 3, "real": 3,
+    # integer aliases
+    "smallint": 2, "tinyint": 2,
 }
+
+
+_decimal_like = {"decimal","numeric","number","money","smallmoney","float","double","real"}
+
+import json
+import xml.etree.ElementTree as ET
+
+def collect_json_samples(vendor_file: str, json_path: list[str], max_samples: int = 100):
+    """Collect sample values from JSON vendor file for a given path."""
+    samples = []
+    with open(vendor_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    def walk(obj, path_idx=0):
+        nonlocal samples
+        if len(samples) >= max_samples:
+            return
+        if path_idx >= len(json_path):
+            if obj is not None:
+                samples.append(str(obj))
+            return
+        key = json_path[path_idx]
+        if isinstance(obj, dict) and key in obj:
+            walk(obj[key], path_idx + 1)
+        elif isinstance(obj, list):
+            for item in obj:
+                walk(item, path_idx)
+                if len(samples) >= max_samples:
+                    break
+
+    walk(data, 0)
+    return samples
+
+
+def collect_xml_samples(vendor_file: str, xpath: str, max_samples: int = 100):
+    """Collect sample values from XML vendor file for a given xpath."""
+    samples = []
+    tree = ET.parse(vendor_file)
+    root = tree.getroot()
+    for elem in root.findall(xpath):
+        if elem.text is not None:
+            samples.append(elem.text.strip())
+        if len(samples) >= max_samples:
+            break
+    return samples
+
+
+
+def _val(v_id, param=None):
+    """Helper to build a validation dictionary."""
+    return {
+        "ValidationTypeId": v_id,
+        "Parameter": param,
+        "Message": None,
+        "Condition": None,
+        "IsError": True,
+        "IsTechnical": True
+    }
+
+def build_validations(coldef, samples=None):
+    """
+    Build a list of validation dicts for a given column definition.
+    samples: optional list of sample values from vendor file.
+    """
+    validations = []
+
+    name = (coldef.get("Name") or "").lower()
+    header = (coldef.get("HeaderName") or "").lower()
+    dtid = coldef.get("DataTypeId")
+    length = coldef.get("Length")
+    precision = coldef.get("Precision")
+    scale = coldef.get("Scale")
+
+    MIN_SAMPLES = 50        # need at least this many samples
+    TOLERANCE = 0.02        # allow up to 2% empties
+    #if coldef["DataTypeId"] != 3: # exception for decimal not to put NotEmppty; TO DO if needed
+    if samples and len(samples) >= MIN_SAMPLES:
+        empties = sum(1 for v in samples if str(v).strip().lower() in ("", "none", "nan", "null"))
+        ratio = empties / len(samples)
+
+    # mark as NotEmpty if empties are very rare
+        if ratio <= TOLERANCE:
+            validations.append(_val(1))
+
+# # Fallback rule: force NotEmpty for key identifiers
+#     if coldef["Name"] in ("ISIN", "SecurityId", "ProviderKey"):
+#         if not any(v for v in validations if v["ValidationTypeId"] == 1):
+#             validations.append(_val(1))
+
+
+
+
+    # 2. NotNull
+    if coldef.get("IsRequired") is True:
+        validations.append(_val(2))
+
+    # 3. IsIsin
+    if "isin" in name or "isin" in header:
+        validations.append(_val(3))
+
+    # 4. IsCurrency (3-letter code)
+    if ("currency" in name or "currency" in header) and length == 3:
+        validations.append(_val(4))
+
+    # 9/10/11. String length validations
+    if (
+        dtid == 1 and length and length > 0
+        and not ("currency" in name or "currency" in header)
+        and not ("isin" in name or "isin" in header)
+):
+        validations.append(_val(10, str(length)))  # MaximumLength
+
+
+    # 23. IsValidDecimal
+    if dtid == 3 and precision and scale is not None:
+        validations.append(_val(23, f"{precision},{scale}"))
+
+    # 26. IsCfi
+    if "cfi" in name or "cfi" in header:
+        validations.append(_val(26))
+
+    # 17. EmailAddress
+    if "email" in name or "mail" in header:
+        validations.append(_val(17))
+
+    # 18. CreditCard
+    if "credit" in name and "card" in name:
+        validations.append(_val(18))
+
+    # 25. AnyString (explicit allowed values)
+    if coldef.get("AllowedValues"):
+        param = ",".join(coldef["AllowedValues"])
+        validations.append(_val(25, param))
+
+    # 27/28. NotStale / MaxDeviationPct
+    # These require BIQH context and extra parameters.
+    if coldef.get("NotStaleParams"):
+        validations.append(_val(27, coldef["NotStaleParams"]))
+    if coldef.get("MaxDeviationPct"):
+        validations.append(_val(28, coldef["MaxDeviationPct"]))
+
+    return validations
+
+
+def parse_biqh_type(type_str: str):
+    s = (type_str or "").strip().lower()
+    # nvarchar(length)
+    m = re.match(r"nvarchar\((max|\d+)\)", s)
+    if m:
+        val = m.group(1)
+        length = -1 if val == "max" else int(val)
+        return DATA_TYPE_MAP["nvarchar"], length, None
+    # decimal/numeric(p,s)
+    m = re.match(r"(decimal|numeric|number)\s*\(\s*(\d+)\s*[,\.]\s*(\d+)\s*\)", s)
+    if m:
+        p, sc = int(m.group(2)), int(m.group(3))
+        return 3, None, (p, sc)
+    # plain decimal-like tokens
+    if s in _decimal_like:
+        return 3, None, None
+    if s in DATA_TYPE_MAP:
+        return DATA_TYPE_MAP[s], None, None
+    # fallback nvarchar(max)
+    return DATA_TYPE_MAP["nvarchar"], -1, None
+
+# -------- Inference helpers (used only when mapping type is absent) --------
+_date_rx = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_datetime_rx = re.compile(r"^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$")
+_time_rx = re.compile(r"^\d{2}:\d{2}(:\d{2})?$")
+_int_rx = re.compile(r"^[+-]?\d+$")
+_dec_rx = re.compile(r"^[+-]?\d+([.,]\d+)?$")
+
+def infer_dtype_from_samples(samples: list[str]):
+    # strip empties
+    S = [s for s in (samples or []) if s not in (None, "", "null", "NULL")]
+    if not S:
+        return DATA_TYPE_MAP["nvarchar"], -1, None  # default nvarchar(max)
+    # normalize decimals (comma → dot) for detection
+    n = [s.replace(",", ".") for s in S]
+
+    # date/time first
+    if all(_date_rx.match(s) for s in n):
+        return DATA_TYPE_MAP["date"], None, None
+    if all(_datetime_rx.match(s) for s in n):
+        return DATA_TYPE_MAP["datetime"], None, None
+    if all(_time_rx.match(s) for s in n):
+        return DATA_TYPE_MAP["time"], None, None
+
+    # numbers
+    if all(_int_rx.match(s) for s in n):
+        # pick bigint if any value exceeds 32-bit range
+        try:
+            if any(abs(int(s)) > 2_147_483_647 for s in n):
+                return DATA_TYPE_MAP["bigint"], None, None
+        except Exception:
+            pass
+        return DATA_TYPE_MAP["int"], None, None
+    if all(_dec_rx.match(s) for s in n):
+        # decimal without explicit precision/scale
+        return DATA_TYPE_MAP["decimal"], None, None
+
+    # boolean-like?
+    if all(s.lower() in ("true","false","0","1","y","n","yes","no") for s in n):
+        return DATA_TYPE_MAP["boolean"], None, None
+
+    # fallback string
+    return DATA_TYPE_MAP["nvarchar"], -1, None
+
 
 # =====================
 # Mapping & Template Loaders
@@ -106,7 +319,8 @@ def load_mapping(path: str | None) -> pd.DataFrame:
                 'biqh_relation_column_data_type','biqh_link_table_name','remarks']
     if not path or not str(path).strip() or not Path(path).exists():
         return pd.DataFrame([], columns=expected)
-    df = pd.read_csv(path, dtype=str).fillna("")
+    #df = pd.read_csv(path, dtype=str).fillna("")
+    df = pd.read_csv(path, dtype=str, sep=None, engine="python").fillna("")
     missing = set(expected) - set(df.columns)
     if missing:
         raise ValueError(f"Mapping file is missing required columns: {missing}")
@@ -123,7 +337,8 @@ def parse_biqh_type(type_str: str):
         val = m.group(1)
         length = -1 if val == "max" else int(val)
         return DATA_TYPE_MAP["nvarchar"], length, None
-    m = re.match(r"decimal\((\d+)\s*,\s*(\d+)\)", s)
+    m = re.match(r"decimal\((\d+)\s*[,\.]\s*(\d+)\)", s)
+    #m = re.match(r"(decimal|numeric|number)\s*\(\s*(\d+)\s*[,\.]\s*(\d+)\s*\)", s)
     if m:
         return DATA_TYPE_MAP["decimal"], None, (int(m.group(1)), int(m.group(2)))
     for k, v in DATA_TYPE_MAP.items():
@@ -158,14 +373,39 @@ def file_type_id_and_sheet(vendor_file: str):
     return 1, None
 
 
+# def build_filename_regex(vendor_file: str) -> str:
+#     fn = Path(vendor_file).name
+#     base, ext = os.path.splitext(fn)
+#     m = re.match(r"^(\d{8})_(.+)$", base)
+#     if m:
+#         rest = re.escape(m.group(2))
+#         return rf"^(\d{{8}})_{rest}{re.escape(ext)}$"
+#     return rf"^{re.escape(base)}{re.escape(ext)}$"
+
 def build_filename_regex(vendor_file: str) -> str:
+    """
+    Build a flexible regex from the concrete vendor filename:
+    - keeps extension fixed
+    - allows an optional 8-digit date token anywhere (captured)
+    - tolerates optional separators _ or - around tokens
+    - escapes the literal parts safely
+    """
     fn = Path(vendor_file).name
     base, ext = os.path.splitext(fn)
-    m = re.match(r"^(\d{8})_(.+)$", base)
-    if m:
-        rest = re.escape(m.group(2))
-        return rf"^(\d{{8}})_{rest}{re.escape(ext)}$"
-    return rf"^{re.escape(base)}{re.escape(ext)}$"
+    esc = re.escape(base)
+
+    # If we find any 8-digit cluster in the name, generalize to a capture group
+    # Otherwise allow an *optional* leading date token with optional separator
+    if re.search(r"\d{8}", base):
+        esc = re.sub(r"\\d\{8\}", r"(\\d{8})", esc)  # if it's already escaped \d{8}
+        esc = re.sub(r"(?:\\d){8}", r"(\\d{8})", esc)  # plain digits in the base
+    else:
+        esc = r"(?:\d{8}[_-]?)?" + esc
+
+    # Let separators be flexible
+    esc = esc.replace(r"\_", r"[_-]?").replace(r"\-", r"[-_]?")
+
+    return rf"^{esc}{re.escape(ext)}$"
 
 # =====================
 # Optional DB helpers (pyodbc)
@@ -357,25 +597,68 @@ def build_xml_table_definitions_from_vendor(xml_path: str, mapping: pd.DataFrame
             dtid, length, dec = (10, None, None)
             precision = scale = None
             r = map_by_path.get(leaf)
+            header_name = None
+            description = None
+            dtid, length, dec = (DATA_TYPE_MAP["nvarchar"], -1, None)
+            precision = scale = None
+
             if r is not None:
-                name = r.get("biqh_parent_column_name") or r.get("biqh_import_field") or name
-                _dtid, length, dec = parse_biqh_type(r.get("biqh_column_data_type"))
-                dtid = _dtid
-                if dec:
-                    precision, scale = dec
-            rows.append({
-                "HeaderName": None, "SampleData": None,
-                "Name": name, "DataTypeId": dtid, "Length": length if dtid in (1,10) else None,
-                "Precision": precision if dtid == 3 else None, "Format": None, "Description": None,
-                "Scale": scale if dtid == 3 else None, "AllowLeadingWhite": False, "AllowTrailingWhite": False,
-                "AllowLeadingSign": False, "AllowTrailingSign": False, "AllowParentheses": False,
-                "AllowDecimalPoint": dtid == 3, "AllowThousands": False, "AllowExponent": False,
-                "AllowCurrencySymbol": False, "AllowPercentage": False, "CultureInfo": None,
-                "ColumnTypeId": 5, "Start": None, "End": None, "ColumnNumber": 0, "Script": None,
-                "UseInnerXml": False, "XPath": rel, "SourceName": None, "JsonPath": None,
-                "NullAliases": None, "Multiplier": None, "TrueAliases": None, "FalseAliases": None,
-                "RetrievalStatisticsEnabled": False, "Validations": []
-            })
+                header_name = r.get("customer_field") or r.get("biqh_import_field") or None
+                name       = r.get("biqh_import_field") or r.get("customer_field") or name
+
+                if (r.get("biqh_column_data_type") or "").strip():
+                    _dtid, length, dec = parse_biqh_type(r.get("biqh_column_data_type"))
+                    dtid = _dtid
+                else:
+                    # (optional) infer if mapping doesn't specify a type:
+                    # samples = collect_xml_samples_for_xpath(xml_root, leaf, max_samples=100)
+                    # dtid, length, dec = infer_dtype_from_samples(samples)
+                    pass
+
+                description = (r.get("description") or None) if (r.get("description") or "").strip() else None
+            else:
+                # optional inference when there's no mapping:
+                # samples = collect_xml_samples_for_xpath(xml_root, leaf, max_samples=100)
+                # dtid, length, dec = infer_dtype_from_samples(samples)
+                pass
+
+            if dec:
+                precision, scale = dec
+            coldef = {
+            "HeaderName": header_name,  # customer_field
+            "SampleData": None,
+            "Name": name,               # biqh_import_field
+            "DataTypeId": dtid,
+            "Length": length if dtid in (1,10) else None,
+            "Precision": precision if dtid == 3 else None,
+            "Format": None,
+            "Description": description,
+            "Scale": scale if dtid == 3 else None,
+            "AllowLeadingWhite": False, "AllowTrailingWhite": False,
+            "AllowLeadingSign": False, "AllowTrailingSign": False,
+            "AllowParentheses": False, "AllowDecimalPoint": dtid == 3,
+            "AllowThousands": False, "AllowExponent": False,
+            "AllowCurrencySymbol": False, "AllowPercentage": False,
+            "CultureInfo": None,
+            "ColumnTypeId": 5, "Start": None, "End": None,
+            "ColumnNumber": 0, "Script": None,
+            "UseInnerXml": False,
+            "XPath": rel,
+            "SourceName": header_name,
+            "JsonPath": None,
+            "NullAliases": None, "Multiplier": None,
+            "TrueAliases": None, "FalseAliases": None,
+            "RetrievalStatisticsEnabled": False,
+            "Validations": []
+        }
+
+        # 🔧 Collect samples for this XPath
+            samples = collect_xml_samples(xml_path, rel, max_samples=100)
+
+        # 🔧 Build validations using type info + samples
+            coldef["Validations"] = build_validations(coldef, samples=samples)
+            rows.append(coldef)
+
         return rows
 
     def _make_table(node_abs: str) -> Dict:
@@ -434,10 +717,8 @@ def _json_rel(from_abs: str, to_abs: str) -> str:
 
 def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFrame) -> List[Dict]:
     data = json.loads(Path(json_path).read_text(encoding="utf-8"))
-    if isinstance(data, list) and data and isinstance(data[0], dict):
-        root = {"_root": data}
-    else:
-        root = data
+    root = {"_root": data} if isinstance(data, list) and data and isinstance(data[0], dict) else data
+
     leafs, tables = _json_abs_paths_and_arrays(root, "$")
     if not tables:
         tables = {"$"}
@@ -485,29 +766,60 @@ def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFra
             rel = _json_rel(tnode, leaf)
             last = [t for t in re.split(r"\.|\[\*\]", leaf) if t and t != "$"][-1]
             name = re.sub(r"[^A-Za-z0-9_]+", "_", last).strip("_") or "field"
-            dtid, length, dec = (10, None, None)
+
+            dtid, length, dec = (DATA_TYPE_MAP["nvarchar"], -1, None)
             precision = scale = None
+
             r = map_by_path.get(leaf)
+            header_name = None
+            description = None
+
             if r is not None:
-                name = r.get("biqh_parent_column_name") or r.get("biqh_import_field") or name
-                _dtid, length, dec = parse_biqh_type(r.get("biqh_column_data_type"))
-                dtid = _dtid
-                if dec:
-                    precision, scale = dec
-            out.append({
-                "HeaderName": None, "SampleData": None,
-                "Name": name, "DataTypeId": dtid, "Length": length if dtid in (1,10) else None,
-                "Precision": precision if dtid == 3 else None, "Format": None, "Description": None,
-                "Scale": scale if dtid == 3 else None, "AllowLeadingWhite": False, "AllowTrailingWhite": False,
-                "AllowLeadingSign": False, "AllowTrailingSign": False, "AllowParentheses": False,
-                "AllowDecimalPoint": dtid == 3, "AllowThousands": False, "AllowExponent": False,
-                "AllowCurrencySymbol": False, "AllowPercentage": False, "CultureInfo": None,
-                "ColumnTypeId": 6, "Start": None, "End": None, "ColumnNumber": 0, "Script": None,
-                "UseInnerXml": False, "XPath": None, "SourceName": None, "JsonPath": rel,
-                "NullAliases": None, "Multiplier": None, "TrueAliases": None, "FalseAliases": None,
-                "RetrievalStatisticsEnabled": False, "Validations": []
-            })
-        return out
+                header_name = r.get("customer_field") or r.get("biqh_import_field") or None
+                name = r.get("biqh_import_field") or r.get("customer_field") or name
+                if (r.get("biqh_column_data_type") or "").strip():
+                    _dtid, length, dec = parse_biqh_type(r.get("biqh_column_data_type"))
+                    dtid = _dtid
+                description = (r.get("description") or None) if (r.get("description") or "").strip() else None
+
+            if dec:
+                precision, scale = dec
+
+            coldef = {
+                "HeaderName": header_name,
+                "SampleData": None,
+                "Name": name,
+                "DataTypeId": dtid,
+                "Length": length if dtid in (1, 10) else None,
+                "Precision": precision if dtid == 3 else None,
+                "Format": None,
+                "Description": description,
+                "Scale": scale if dtid == 3 else None,
+                "AllowLeadingWhite": False, "AllowTrailingWhite": False,
+                "AllowLeadingSign": False, "AllowTrailingSign": False,
+                "AllowParentheses": False, "AllowDecimalPoint": dtid == 3,
+                "AllowThousands": False, "AllowExponent": False,
+                "AllowCurrencySymbol": False, "AllowPercentage": False,
+                "CultureInfo": None,
+                "ColumnTypeId": 6,
+                "Start": None, "End": None, "ColumnNumber": 0, "Script": None,
+                "UseInnerXml": False,
+                "XPath": None,
+                "SourceName": header_name,
+                "JsonPath": rel,
+                "NullAliases": None, "Multiplier": None,
+                "TrueAliases": None, "FalseAliases": None,
+                "RetrievalStatisticsEnabled": False,
+                "Validations": []
+            }
+
+            path_tokens = [tok for tok in re.split(r"\.|\[\*\]", leaf) if tok and tok != "$"]
+            samples = collect_json_samples(json_path, path_tokens, max_samples=100)
+            coldef["Validations"] = build_validations(coldef, samples=samples)
+
+            out.append(coldef)
+
+        return out  # ✅ return after loop, not inside
 
     def _rel_jsonpath(par: Optional[str], child: str) -> str:
         if par is None:
@@ -523,8 +835,13 @@ def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFra
         par = parents.get(tpath)
         node_json = _rel_jsonpath(par, tpath) if par is not None else tpath
         tbl = {
-            "TableName": _tname(tpath), "NodeXPath": None, "NodeJsonPath": node_json, "SqlQuery": None,
-            "ChildTableDefinitions": [], "ColumnDefinitions": _coldefs_for_table(tpath), "IndexDefinitions": []
+            "TableName": _tname(tpath),
+            "NodeXPath": None,
+            "NodeJsonPath": node_json,
+            "SqlQuery": None,
+            "ChildTableDefinitions": [],
+            "ColumnDefinitions": _coldefs_for_table(tpath),
+            "IndexDefinitions": []
         }
         for ch in [c for c, p in parents.items() if p == tpath]:
             tbl["ChildTableDefinitions"].append(_make_table(ch))
@@ -532,15 +849,22 @@ def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFra
 
     return [_make_table(r) for r in roots]
 
+
 # =====================
 # Mapping -> ColumnDefs (flat fallback)
 # =====================
 
-def build_column_definitions_from_mapping(mapping: pd.DataFrame, filetype_id: int) -> List[Dict]:
+def build_column_definitions_from_mapping(mapping: pd.DataFrame, filetype_id: int,df: pd.DataFrame | None = None ) -> List[Dict]:
     coldefs = []
     for idx, r in mapping.iterrows():
-        src_header = r["customer_field"] or r["biqh_import_field"]
-        target_name = r["biqh_parent_column_name"] or r["biqh_import_field"]
+        # src_header = r["customer_field"] or r["biqh_import_field"]
+        # target_name = r["biqh_parent_column_name"] or r["biqh_import_field"]
+        # HeaderName = customer_field ; Name = biqh_import_field
+        src_header = r["customer_field"] or r["biqh_import_field"]     # HeaderName
+        target_name = r["biqh_import_field"] or r["customer_field"]    # Name
+
+       # print("DEBUG biqh_column_data_type raw:", repr(r["biqh_column_data_type"]))
+
         dtid, length, dec = parse_biqh_type(r["biqh_column_data_type"])
         precision = scale = None
         if dec:
@@ -561,9 +885,15 @@ def build_column_definitions_from_mapping(mapping: pd.DataFrame, filetype_id: in
             "NullAliases": None, "Multiplier": None, "TrueAliases": None, "FalseAliases": None,
             "SourceName": src_header or None, "RetrievalStatisticsEnabled": False, "Validations": [],
         }
-        if dtid == 1 and (length is not None) and length > 0:
-            coldef["Validations"].append({"ValidationTypeId": 10, "Parameter": str(length),
-                                          "Message": None, "Condition": None, "IsError": True, "IsTechnical": True})
+        # if dtid == 1 and (length is not None) and length > 0:
+        #     coldef["Validations"].append({"ValidationTypeId": 10, "Parameter": str(length),
+        #                                   "Message": None, "Condition": None, "IsError": True, "IsTechnical": True})
+        samples = None
+        if src_header and src_header in df.columns:
+            #samples = df[src_header].dropna().astype(str).head(100).tolist()
+            samples = df[src_header].astype(str).head(100).tolist()
+        coldef["Validations"] = build_validations(coldef, samples=samples)
+        #coldef["Validations"] = build_validations(coldef)
         coldefs.append(coldef)
     return coldefs
 
@@ -733,6 +1063,8 @@ def build_feed_json(
     custom_table_name: str = "CustomTable",
     dbmeta: Optional[DbMeta] = None,
     conn=None,
+    df: Optional[pd.DataFrame] = None,
+    ftype_id: Optional[int] = None
 ) -> Dict:
     feed = json.loads(json.dumps(template))  # deep copy
     feed_obj = feed["Feed"]
@@ -784,7 +1116,7 @@ def build_feed_json(
 
     # Fallback to flat columns if no hierarchy or non XML/JSON
     if not file_def["TableDefinitions"]:
-        cols = build_column_definitions_from_mapping(mapping, ftype_id)
+        cols = build_column_definitions_from_mapping(mapping, ftype_id, df=df)
         table_def = {
             "TableName": custom_table_name, "NodeXPath": None, "NodeJsonPath": None, "SqlQuery": None,
             "ChildTableDefinitions": [], "ColumnDefinitions": cols, "IndexDefinitions": []
@@ -975,12 +1307,36 @@ def build_feed_json_paths(
     """Convenience wrapper so you can call this directly in code without CLI.
     Returns the output file path.
     """
+    import os
+    import pandas as pd
+
+    # Load template and mapping
     template = load_template(template_path)
     mapping = load_mapping(mapping_path)
 
+    # Detect file type
+    ext = os.path.splitext(vendor_file)[1].lower()
+    df = None
+    filetype_id = None
+
+    if ext in [".csv", ".txt"]:
+        filetype_id = 1
+        df = pd.read_csv(vendor_file, sep=None, engine="python")  # auto-detect delimiter
+    elif ext in [".xls", ".xlsx"]:
+        filetype_id = 1
+        df = pd.read_excel(vendor_file, sheet_name=0)  # first sheet
+    elif ext in [".json"]:
+        filetype_id = 3
+    elif ext in [".xml"]:
+        filetype_id = 2
+    else:
+        raise ValueError(f"Unsupported file extension: {ext}")
+
+    # Optional DB metadata
     conn = try_connect(mssql_conn_str or "")
     dbmeta = load_db_meta(conn) if conn else None
 
+    # Build feed JSON (note the new df/filetype_id args)
     feed_json = build_feed_json(
         template=template,
         mapping=mapping,
@@ -993,12 +1349,16 @@ def build_feed_json_paths(
         custom_table_name=custom_table_name,
         dbmeta=dbmeta,
         conn=conn,
+        df=df,                  # pass DataFrame when available
+        ftype_id=filetype_id # tell builder what type of file this is
     )
 
+    # Save output file
     out_path = Path(out_dir) / f"{sanitize_feed_name(feed_name)}_{int(feed_id)}_V1.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(feed_json, indent=2, ensure_ascii=False), encoding="utf-8")
     return out_path
+
 
 if __name__ == "__main__":
     out = build_feed_json_paths(
