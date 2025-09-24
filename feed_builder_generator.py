@@ -378,6 +378,35 @@ def file_type_id_and_sheet(vendor_file: str):
     if ext in [".xlsx", ".xls"]: return 4, 1
     return 1, None
 
+def detect_decimal_separator(vendor_file, nrows=100):
+    # read just a sample with auto delimiter detection
+    #df = pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str)
+    try:
+        df = pd.read_csv(vendor_file, sep=None, engine="python",nrows=nrows,dtype=str, encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        df = pd.read_csv(vendor_file, sep=None, engine="python",nrows=nrows,dtype=str, encoding="latin1")
+
+    dot_count = 0
+    comma_count = 0
+
+    # regex for numbers with either , or .
+    num_pattern = re.compile(r"^\s*[-+]?\d{1,3}([.,]\d+)?\s*$")
+
+    for col in df.columns:
+        for val in df[col].dropna().astype(str):
+            if num_pattern.match(val):
+                if "." in val:
+                    dot_count += 1
+                elif "," in val:
+                    comma_count += 1
+
+    if dot_count > comma_count:
+        return "."
+    elif comma_count > dot_count:
+        return ","
+    else:
+        return None  # unknown / no decimals found
+
 
 
 def build_filename_regex(vendor_file: str) -> str:
@@ -912,11 +941,11 @@ def choose_provider_key_source(rows: pd.DataFrame):
     for target in candidates:
         r = rows[rows["biqh_parent_column_name"].str.lower() == target.lower()]
         if not r.empty:
-            source = r.iloc[0]["customer_field"] or r.iloc[0]["biqh_import_field"]
+            source = r.iloc[0]["biqh_import_field"] or r.iloc[0]["customer_field"]
             return source, "ProviderKey"
     string_rows = rows[rows["biqh_column_data_type"].str.lower().str.startswith("nvarchar")]
     if not string_rows.empty:
-        source = string_rows.iloc[0]["customer_field"] or string_rows.iloc[0]["biqh_import_field"]
+        source = string_rows.iloc[0]["biqh_import_field"] or string_rows.iloc[0]["customer_field"]
         return source, "ProviderKey"
     return None
 
@@ -957,7 +986,7 @@ def build_map_sql_for_table(
     joins_by_table: Dict[str, str] = {}
 
     for _, r in rows.iterrows():
-        src = r["customer_field"] or r["biqh_import_field"]
+        src = r["biqh_import_field"] or r["customer_field"]
         tgt = r["biqh_parent_column_name"] or r["biqh_import_field"]
         if not src or not tgt:
             continue
@@ -1096,6 +1125,7 @@ def build_feed_json(
 
     ftype_id, sheet_num = file_type_id_and_sheet(vendor_file)
     file_name_regex = build_filename_regex(vendor_file)
+    decimal_separator = detect_decimal_separator(vendor_file)
     file_def = {
         "FileTypeId": ftype_id, "Name": None, "FileNameRegex": file_name_regex,
         "FileNameRegexDescription": None, "CsvDelimiterCharacter": None if ftype_id != 1 else ",",
@@ -1105,7 +1135,7 @@ def build_feed_json(
         "ReadHeaders": True, "CheckHeaders": False, "CheckUnexpectedHeaders": False, "UseEmbargoDateTime": False,
         "EmbargoDateTimeComposite": None, "IgnoreColumnsWithEmptyHeader": True, "SkipEmptyLines": True,
         "SkipFirstNumberOfLines": 0, "EndOfFileRegex": None, "CheckZippedFileNameByRegex": False,
-        "DefaultMicrosoftStandardTimeZoneId": None, "NumberDecimalSeparator": "." if ftype_id in (1,4) else None,
+        "DefaultMicrosoftStandardTimeZoneId": None, "NumberDecimalSeparator": decimal_separator if ftype_id in (1,4) else None,
         "NumberGroupSeparator": None, "RootXPath": None, "XmlNamespaces": None, "RootJsonPath": None,
         "DetectEncoding": False, "SheetNumber": sheet_num, "SortOrder": None, "TableDefinitions": [],
     }
@@ -1266,10 +1296,23 @@ def build_feed_json(
         if t and t not in seen:
             seen.add(t)
             unique_auth_targets.append(t)
+
+    rowauth_tables = set()
+    if conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT Name 
+                FROM dbo.[Table] 
+                WHERE Name LIKE '%RowAuth%'
+                """)
+            rowauth_tables = {r[0] for r in cur.fetchall()}        
     
     for t in unique_auth_targets:
         if not is_valid_table(t):
             continue
+        if (t + "RowAuth") not in rowauth_tables:
+            continue
+
         auth_block["BiqhTableAuthorizeMaps"].append(
             {"BiqhTableName": t, "SortOrder": sort, "Description": None, "IsMergeStatement": True,
              "UseSubsetKey": None, "AllowDeletes": None, "AuthorizeForProvider": True,
