@@ -17,8 +17,8 @@ import pandas as pd
 # =====================
 DEFAULTS = {
     "template": "file_structure_V24.json",
-    "mapping": "",
-    "vendor_file": "ETF-101753-ISHARES SLI (CH).json",
+    "mapping": "mtge_ref_mapping.csv",
+    "vendor_file": "",
     "feed_id": 999,
     "feed_name": "test_feed_creation",
     "provider_id": 61,

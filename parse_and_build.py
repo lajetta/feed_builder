@@ -48,7 +48,7 @@ def run_pipeline(vendor_file: str, template_path: str, out_dir: str,
 
 if __name__ == "__main__":
     # Example usage (adjust paths as needed)
-    out_dir = "/mnt/data/out"
-    template = "/mnt/data/file_structure_V24.json"
-    vendor = "/mnt/data/ETF-101753-ISHARES SLI (CH).json"
+    out_dir = "C:/Users/artem/OneDrive/Work/Data Analyst stuff/BIQH - python scripts/feed_builder/"
+    template = "file_structure_V24.json"
+    vendor = "ETF-101753-ISHARES SLI (CH).json"
     run_pipeline(vendor, template, out_dir)

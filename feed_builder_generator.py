@@ -59,13 +59,13 @@ import pandas as pd
 # =====================
 DEFAULTS = {
     "template": "file_structure_V24.json",
-    "mapping": "cds_liquidity_metrics_mapping.csv",  # optional
-    "vendor_file": "CDS_T1_LIQUIDITY_METRICS-202503.xlsx",
-    "feed_id": 395,
-    "feed_name": "ABN MRDS Markit CDS Liquidity Metrics",
-    "provider_id": 279,
+    "mapping": "fdwh_mapping.csv",  # optional
+    "vendor_file": "KISS_FDWH_PUBFONDS_20250630.csv",
+    "feed_id": 401,
+    "feed_name": "DekaBank FDWH Esg Data",
+    "provider_id": 284,
     "import_frequency_id": 1,
-    "schema": "abncdsliquid",
+    "schema": "dekafdwh",
     "out_dir": ".",
     # Optional SQL Server connection string to IntBIQHModel.
     # Example (Windows Auth): DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;DATABASE=IntBIQHModel;Trusted_Connection=yes;Encrypt=no
@@ -169,14 +169,16 @@ def build_validations(coldef, samples=None):
 
     MIN_SAMPLES = 50        # need at least this many samples
     TOLERANCE = 0.02        # allow up to 2% empties
-    #if coldef["DataTypeId"] != 3: # exception for decimal not to put NotEmppty; TO DO if needed
+    
     if samples and len(samples) >= MIN_SAMPLES:
         empties = sum(1 for v in samples if str(v).strip().lower() in ("", "none", "nan", "null"))
         ratio = empties / len(samples)
 
     # mark as NotEmpty if empties are very rare
-        if ratio <= TOLERANCE:
+    #if coldef["DataTypeId"] != 3: # exception for decimal not to put NotEmppty; TO DO if needed
+        if ratio <= TOLERANCE and coldef["DataTypeId"] != 3:
             validations.append(_val(1))
+       
 
 # # Fallback rule: force NotEmpty for key identifiers
 #     if coldef["Name"] in ("ISIN", "SecurityId", "ProviderKey"):
@@ -191,7 +193,8 @@ def build_validations(coldef, samples=None):
         validations.append(_val(2))
 
     # 3. IsIsin
-    if "isin" in name or "isin" in header:
+    pattern = re.compile(r"(^|[_-])isin($|[_-]|code)", flags=re.IGNORECASE)
+    if pattern.search(name) or pattern.search(header):
         validations.append(_val(3))
 
     # 4. IsCurrency (3-letter code)
@@ -199,10 +202,11 @@ def build_validations(coldef, samples=None):
         validations.append(_val(4))
 
     # 9/10/11. String length validations
+    pattern = re.compile(r"(^|[_-])isin($|[_-]|code)", flags=re.IGNORECASE)
     if (
         dtid == 1 and length and length > 0
         and not ("currency" in name or "currency" in header)
-        and not ("isin" in name or "isin" in header)
+        and not (pattern.search(name) or pattern.search(header))
 ):
         validations.append(_val(10, str(length)))  # MaximumLength
 
@@ -320,7 +324,9 @@ def load_mapping(path: str | None) -> pd.DataFrame:
     if not path or not str(path).strip() or not Path(path).exists():
         return pd.DataFrame([], columns=expected)
     #df = pd.read_csv(path, dtype=str).fillna("")
+
     df = pd.read_csv(path, dtype=str, sep=None, engine="python").fillna("")
+    df.columns = [c.strip().lstrip("\ufeff") for c in df.columns]
     missing = set(expected) - set(df.columns)
     if missing:
         raise ValueError(f"Mapping file is missing required columns: {missing}")
@@ -373,14 +379,6 @@ def file_type_id_and_sheet(vendor_file: str):
     return 1, None
 
 
-# def build_filename_regex(vendor_file: str) -> str:
-#     fn = Path(vendor_file).name
-#     base, ext = os.path.splitext(fn)
-#     m = re.match(r"^(\d{8})_(.+)$", base)
-#     if m:
-#         rest = re.escape(m.group(2))
-#         return rf"^(\d{{8}})_{rest}{re.escape(ext)}$"
-#     return rf"^{re.escape(base)}{re.escape(ext)}$"
 
 def build_filename_regex(vendor_file: str) -> str:
     """
@@ -393,19 +391,27 @@ def build_filename_regex(vendor_file: str) -> str:
     fn = Path(vendor_file).name
     base, ext = os.path.splitext(fn)
     esc = re.escape(base)
+    if re.search(r"\d{14}", base):   # datetime
+        pattern = re.escape(base).replace(re.escape(re.search(r"\d{14}", base).group()), r"(\d{14})")
+    elif re.search(r"\d{8}", base):  # date
+        pattern = re.escape(base).replace(re.escape(re.search(r"\d{8}", base).group()), r"(\d{8})")
+    elif re.search(r"\d{6}", base):  # time
+        pattern = re.escape(base).replace(re.escape(re.search(r"\d{6}", base).group()), r"(\d{6})")
+
+    return rf"^{pattern}{re.escape(ext)}$"
 
     # If we find any 8-digit cluster in the name, generalize to a capture group
     # Otherwise allow an *optional* leading date token with optional separator
-    if re.search(r"\d{8}", base):
-        esc = re.sub(r"\\d\{8\}", r"(\\d{8})", esc)  # if it's already escaped \d{8}
-        esc = re.sub(r"(?:\\d){8}", r"(\\d{8})", esc)  # plain digits in the base
-    else:
-        esc = r"(?:\d{8}[_-]?)?" + esc
+    # if re.search(r"\d{8}", base):
+    #     esc = re.sub(r"\\d\{8\}", r"(\\d{8})", esc)  # if it's already escaped \d{8}
+    #     esc = re.sub(r"(?:\\d){8}", r"(\\d{8})", esc)  # plain digits in the base
+    # else:
+    #     esc = r"(?:\d{8}[_-]?)?" + esc
 
-    # Let separators be flexible
-    esc = esc.replace(r"\_", r"[_-]?").replace(r"\-", r"[-_]?")
+    # # Let separators be flexible
+    # esc = esc.replace(r"\_", r"[_-]?").replace(r"\-", r"[-_]?")
 
-    return rf"^{esc}{re.escape(ext)}$"
+    # return rf"^{esc}{re.escape(ext)}$"
 
 # =====================
 # Optional DB helpers (pyodbc)
@@ -1321,7 +1327,11 @@ def build_feed_json_paths(
 
     if ext in [".csv", ".txt"]:
         filetype_id = 1
-        df = pd.read_csv(vendor_file, sep=None, engine="python")  # auto-detect delimiter
+        try:
+            df = pd.read_csv(vendor_file, sep=None, engine="python", encoding="utf-8-sig")
+        except UnicodeDecodeError:
+            df = pd.read_csv(vendor_file, sep=None, engine="python", encoding="latin1")
+        #df = pd.read_csv(vendor_file, sep=None, engine="python")  # auto-detect delimiter
     elif ext in [".xls", ".xlsx"]:
         filetype_id = 1
         df = pd.read_excel(vendor_file, sheet_name=0)  # first sheet
