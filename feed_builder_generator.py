@@ -87,8 +87,8 @@ ENV_MAP = {
 }
 
 DATA_TYPE_MAP = {
-    "nvarchar": 1, "int": 2, "decimal": 3, "date": 4, "datetime": 5,
-    "time": 6, "boolean": 7, "bit": 7, "bigint": 8, "binary": 9, "varbinary": 9, "any": 10,
+    "nvarchar": 1, "int": 2,"integer": 2, "decimal": 3, "date": 4, "datetime": 5,
+    "time": 6, "boolean": 7, "bit": 7, "bigint": 8, "biginteger": 8, "binary": 9, "varbinary": 9, "any": 10,
     # numeric aliases
     "numeric": 3, "number": 3, "money": 3, "smallmoney": 3, "float": 3, "double": 3, "real": 3,
     # integer aliases
