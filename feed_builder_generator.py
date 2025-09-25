@@ -51,18 +51,20 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
+from pandas.api.types import is_datetime64_any_dtype, is_integer_dtype, is_float_dtype
 
 import pandas as pd
+from datetime import datetime
 
 # =====================
 # Defaults & ENV
 # =====================
 DEFAULTS = {
     "template": "file_structure_V24.json",
-    "mapping": "fdwh_mapping.csv",  # optional
-    "vendor_file": "KISS_FDWH_PUBFONDS_20250630.csv",
+    "mapping": "cds_corps_pricing_mapping.csv",  # optional
+    "vendor_file": "Corps_Pricing_N1600-2025-09-09.csv",
     "feed_id": 401,
-    "feed_name": "DekaBank FDWH Esg Data",
+    "feed_name": "test",
     "provider_id": 284,
     "import_frequency_id": 1,
     "schema": "dekafdwh",
@@ -381,10 +383,15 @@ def file_type_id_and_sheet(vendor_file: str):
 def detect_decimal_separator(vendor_file, nrows=100):
     # read just a sample with auto delimiter detection
     #df = pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str)
-    try:
-        df = pd.read_csv(vendor_file, sep=None, engine="python",nrows=nrows,dtype=str, encoding="utf-8-sig")
-    except UnicodeDecodeError:
-        df = pd.read_csv(vendor_file, sep=None, engine="python",nrows=nrows,dtype=str, encoding="latin1")
+    ext = Path(vendor_file).suffix.lower()
+    if ext in [".xlsx", ".xls"]:
+        df = pd.read_excel(vendor_file, nrows=nrows, dtype=str)
+    elif ext in [".csv", ".txt"]:
+        try:
+            df = pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str, encoding="utf-8-sig")
+        except UnicodeDecodeError:
+            df = pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str, encoding="latin1")
+
 
     dot_count = 0
     comma_count = 0
@@ -406,28 +413,341 @@ def detect_decimal_separator(vendor_file, nrows=100):
         return ","
     else:
         return None  # unknown / no decimals found
+    
+##date/time/datetime FORMAT detection - START BLOCK
+def read_vendor_df(vendor_file: str, nrows: int = 200, xml_xpath: str | None = None) -> pd.DataFrame:
+    """
+    Returns a small sample DataFrame from CSV/TXT/XLS/XLSX/JSON/XML.
+    For JSON: flattens objects/arrays with json_normalize.
+    For XML: tries pandas.read_xml (optionally with xpath).
+    """
+    ext = Path(vendor_file).suffix.lower()
+
+    # Excel - allow pandas to infer dtypes so datetime/numeric detection can work
+    if ext in (".xlsx", ".xls"):
+        return pd.read_excel(vendor_file, nrows=nrows)
+
+    # CSV/TXT with delimiter/encoding auto-detection
+    if ext in (".csv", ".txt"):
+        try:
+            # let pandas infer types (don't force dtype=str) so date/number detection can work
+            return pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, encoding="utf-8-sig")
+        except UnicodeDecodeError:
+            return pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, encoding="latin1")
+
+    # JSON: flatten
+    if ext == ".json":
+        with open(vendor_file, "r", encoding="utf-8-sig") as f:
+            obj = json.load(f)
+
+        # find a list of records
+        def _find_records(o):
+            if isinstance(o, list):
+                return o
+            if isinstance(o, dict):
+                # prefer first list value
+                for _, v in o.items():
+                    if isinstance(v, list):
+                        return v
+                return [o]
+            return [o]
+
+        records = _find_records(obj)
+        df = pd.json_normalize(records)
+        return df.head(nrows).astype(str)
+
+    # XML
+    if ext == ".xml":
+        # pandas.read_xml will try to infer structure; use xpath if you know the row node
+        try:
+            df = pd.read_xml(vendor_file, xpath=xml_xpath) if xml_xpath else pd.read_xml(vendor_file)
+            return df.head(nrows).astype(str)
+        except Exception:
+            # If XML is too custom, skip detection instead of failing
+            return pd.DataFrame()
+
+    raise ValueError(f"Unsupported file extension: {ext}")
+
+def detect_datetime_format_series(series: pd.Series, force_kind: str | None = None) -> str | None:
+    """
+    Detects a canonical format string for a column sample.
+    Handles:
+      - native datetime dtype
+      - Excel serials (integers/floats ~ Excel date origin)
+      - dd/MM vs MM/dd disambiguation by majority vote (defaults to MM/dd if ambiguous)
+      - milliseconds (HH:mm:ss.fff / .ffffff)
+      - ISO 'T' and optional 'Z'
+    Returns strings like: yyyy-MM-dd, dd.MM.yyyy, HHmmss, yyyy-MM-dd HH:mm:ss, yyyyMMddHHmmss, etc.
+    """
+    s = series.dropna()
+    if s.empty:
+        return None
+
+    # 1) Native datetime dtype → pick date vs datetime by time component presence
+    if is_datetime64_any_dtype(s):
+        has_time = (s.dt.time != datetime.min.time()).any()
+        return "yyyy-MM-dd HH:mm:ss" if has_time else "yyyy-MM-dd"
+
+    # 2) Excel serials (numbers around Excel epoch)
+    def _looks_like_excel_serial(vals) -> bool:
+        try:
+            vals = [float(x) for x in vals]
+        except Exception:
+            return False
+        ok = [20000 <= v <= 60000 for v in vals]  # rough bounds 1954..2064
+        return sum(ok) >= max(3, len(vals)//2)
+
+    def _has_fraction(vals) -> bool:
+        try:
+            return any(abs(float(x) - int(float(x))) > 1e-9 for x in vals)
+        except Exception:
+            return False
+
+    if is_integer_dtype(s) or is_float_dtype(s):
+        vals = s.head(20).tolist()
+        if _looks_like_excel_serial(vals):
+            return "yyyy-MM-dd HH:mm:ss" if _has_fraction(vals) else "yyyy-MM-dd"
+
+    # 3) Strings → patterns
+    samples = [str(x).strip() for x in s.astype(str).unique().tolist()[:30] if str(x).strip()]
+
+    # ISO first
+    iso_dt = re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d{3,6})?)?(Z)?$")
+    iso_d  = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+    iso_t  = re.compile(r"^\d{2}:\d{2}(:\d{2}(\.\d{3,6})?)?$")
+    for v in samples:
+        if iso_dt.match(v):
+            msec = re.search(r"\.(\d{3,6})", v)
+            if msec:
+                return "yyyy-MM-dd HH:mm:ss.fff" if len(msec.group(1)) == 3 else "yyyy-MM-dd HH:mm:ss.FFFFFF"
+            return "yyyy-MM-dd HH:mm:ss" if ":ss" in v or v.count(":") == 2 else "yyyy-MM-dd HH:mm"
+        if iso_d.match(v):
+            return "yyyy-MM-dd"
+        if iso_t.match(v):
+            if re.search(r"\.\d{3,6}$", v):
+                return "HH:mm:ss.fff" if len(v.split(".")[-1]) == 3 else "HH:mm:ss.FFFFFF"
+            return "HH:mm:ss" if v.count(":") == 2 else "HH:mm"
+
+    # Compact digit formats
+    if all(re.fullmatch(r"\d{8}", v) for v in samples):
+        def _resolve_8(s8: str) -> str | None:
+            y, m, d = s8[:4], s8[4:6], s8[6:]
+            if 1 <= int(m) <= 12 and 1 <= int(d) <= 31:
+                return "yyyyMMdd"
+            d2, m2 = s8[:2], s8[2:4]
+            if 1 <= int(m2) <= 12 and 1 <= int(d2) <= 31:
+                return "ddMMyyyy"
+            m3, d3 = s8[:2], s8[2:4]
+            if 1 <= int(m3) <= 12 and 1 <= int(d3) <= 31:
+                return "MMddyyyy"
+            return None
+        got = _resolve_8(samples[0])
+        if got:
+            return got
+
+    if all(re.fullmatch(r"\d{12}", v) for v in samples):
+        return "yyyyMMddHHmm"
+    if all(re.fullmatch(r"\d{14}", v) for v in samples):
+        return "yyyyMMddHHmmss"
+    if all(re.fullmatch(r"\d{4}", v) for v in samples):
+        return "HHmm"
+    if all(re.fullmatch(r"\d{6}", v) for v in samples):
+        return "HHmmss"
+
+    # --- FIXED DISAMBIGUATION ---
+    def _vote_day_first(vals, sep):
+        dd_first = md_first = 0
+        for v in vals:
+            parts = v.split()[0].split(sep)
+            if len(parts) != 3:
+                continue
+            a, b = int(parts[0]), int(parts[1])
+            if a > 12: dd_first += 1
+            if b > 12: md_first += 1
+        if dd_first > md_first:
+            return "dd"
+        if md_first > dd_first:
+            return "MM"
+        return None  # ambiguous
+
+    # Disambiguate dd/MM/yyyy vs MM/dd/yyyy (also -, .)
+    for sep in [r"/", r"-", r"\."]:
+        subset = [v for v in samples if re.match(fr"^\d{{2}}{sep}\d{{2}}{sep}\d{{4}}", v)]
+        if not subset:
+            continue
+        vote = _vote_day_first(subset, sep)
+
+        # 👇 default to US-style if ambiguous
+        if vote is None:
+            vote = "MM"
+
+        # Normalize separator text (remove regex escaping)
+        sep_chr = sep.replace("\\", "")
+
+        has_ss   = any(re.search(r"[ T]\d{2}:\d{2}:\d{2}(?:\.\d{3,6})?$", v) for v in subset)
+        has_ms3  = any(re.search(r"\.\d{3}$", v) for v in subset)
+        has_ms6  = any(re.search(r"\.\d{6}$", v) for v in subset)
+        time_fmt = None
+        if any(re.search(r"[ T]\d{2}:\d{2}(:\d{2}(\.\d{3,6})?)?$", v) for v in subset):
+            if has_ms6: time_fmt = " HH:mm:ss.FFFFFF"
+            elif has_ms3: time_fmt = " HH:mm:ss.fff"
+            elif has_ss:  time_fmt = " HH:mm:ss"
+            else:         time_fmt = " HH:mm"
+
+        if vote == "dd":
+            date_fmt = f"dd{sep_chr}MM{sep_chr}yyyy"
+        else:
+            date_fmt = f"MM{sep_chr}dd{sep_chr}yyyy"
+
+        return date_fmt + (time_fmt or "")
 
 
+
+
+
+    return None
+
+
+def find_series_for_column(df: pd.DataFrame, col_key: str, jsonpath: str | None = None) -> pd.Series | None:
+    """
+    Try to locate the DataFrame column for a mapping key.
+    1) exact match
+    2) case-insensitive match
+    3) last-token match from JsonPath/XPath or key (handles flattened JSON/XML)
+    """
+    if not isinstance(df, pd.DataFrame) or df.empty:
+        return None
+
+    # 1) exact
+    if col_key in df.columns:
+        return df[col_key]
+
+    # 2) case-insensitive exact
+    lower_map = {c.lower(): c for c in df.columns}
+    if col_key.lower() in lower_map:
+        return df[lower_map[col_key.lower()]]
+
+    # 3) last-token match (jsonpath/xpath or key)
+    raw = jsonpath or col_key
+    tokens = [t for t in re.split(r"[.\[\]/]+", str(raw)) if t]
+    if tokens:
+        last = tokens[-1].lower()
+        for c in df.columns:
+            if c.lower().split(".")[-1] == last:
+                return df[c]
+
+    return None
+def detect_datetime_formats(
+    vendor_file: str,
+    column_meta: dict,
+    nrows: int = 200,
+    json_paths: dict | None = None,
+    xml_xpath: str | None = None
+) -> dict:
+    """
+    Detect formats for date(4)/datetime(5)/time(6) columns in any vendor file.
+    column_meta: {column_name -> DataTypeId or 'date'/'datetime'/'time'}
+    json_paths:  optional {column_name -> JsonPath} to help match flattened JSON
+    xml_xpath:   optional row-level XPath to guide XML read
+    Returns: {column_name: format_string}
+    """
+    df = read_vendor_df(vendor_file, nrows=nrows, xml_xpath=xml_xpath)
+    if df is None or df.empty:
+        return {}
+
+    formats: dict[str, str] = {}
+    for key, dtype in column_meta.items():
+        # normalize dtype → kind
+        kind = None
+        if dtype in (4, "date"): kind = "date"
+        elif dtype in (5, "datetime"): kind = "datetime"
+        elif dtype in (6, "time"): kind = "time"
+        else: 
+            continue  # skip non-date types
+
+        s = find_series_for_column(df, key, (json_paths or {}).get(key))
+        if s is None:
+            continue
+
+        fmt = detect_datetime_format_series(s, force_kind=kind)
+        if fmt:
+            formats[key] = fmt
+
+    return formats
+
+##date/time/datetime FORMAT detection - END BLOCK
 
 def build_filename_regex(vendor_file: str) -> str:
     """
-    Build a flexible regex from the concrete vendor filename:
-    - keeps extension fixed
-    - allows an optional 8-digit date token anywhere (captured)
-    - tolerates optional separators _ or - around tokens
-    - escapes the literal parts safely
+    Build a regex from a concrete filename that:
+      - keeps extension fixed
+      - replaces any date/time token with a capturing group
+        Supported tokens (preserving exact separators from the name):
+          YYYY-MM-DD, DD-MM-YYYY, YYYY_MM_DD, DD_MM_YYYY, YYYY.MM.DD, DD.MM.YYYY
+          HH:MM, HH:MM:SS, HH-MM, HH-MM-SS, HH.MM, HH.MM.SS
+          contiguous: yyyyMMddHHmmss, yyyyMMddHHmm, yyyyMMdd, HHmmss
+      - supports zero, one, or multiple tokens
+      - leaves other characters literal (escaped)
     """
     fn = Path(vendor_file).name
     base, ext = os.path.splitext(fn)
-    esc = re.escape(base)
-    if re.search(r"\d{14}", base):   # datetime
-        pattern = re.escape(base).replace(re.escape(re.search(r"\d{14}", base).group()), r"(\d{14})")
-    elif re.search(r"\d{8}", base):  # date
-        pattern = re.escape(base).replace(re.escape(re.search(r"\d{8}", base).group()), r"(\d{8})")
-    elif re.search(r"\d{6}", base):  # time
-        pattern = re.escape(base).replace(re.escape(re.search(r"\d{6}", base).group()), r"(\d{6})")
 
+    # token patterns (return a function that builds the capture with observed separators)
+    def _ymd_builder(m: re.Match) -> str:
+        sep = re.escape(m.group(1))  # not 2
+        return rf"(\d{{4}}{sep}\d{{2}}{sep}\d{{2}})"
+
+    def _dmy_builder(m: re.Match) -> str:
+        sep = re.escape(m.group(1))  # not 2
+        return rf"(\d{{2}}{sep}\d{{2}}{sep}\d{{4}})"
+
+    def _time_builder(m: re.Match) -> str:
+        sep = re.escape(m.group(1))  # separator
+    # detect HH<sep>MM or HH<sep>MM<sep>SS
+        return rf"(\d{{2}}{sep}\d{{2}}{sep}\d{{2}})" if m.group(2) else rf"(\d{{2}}{sep}\d{{2}})"
+
+    token_specs = [
+        # separated date: YYYY-sep-MM-sep-DD  (sep repeated)
+        (re.compile(r"\d{4}([\-_.])\d{2}\1\d{2}"), _ymd_builder),
+        # separated date: DD-sep-MM-sep-YYYY
+        (re.compile(r"\d{2}([\-_.])\d{2}\1\d{4}"), _dmy_builder),
+        # separated time: HH:MM[:SS]
+        (re.compile(r"\d{2}([:\-_.])\d{2}(\1\d{2})?"), _time_builder),
+        # contiguous datetime/date/time tokens (longest first)
+        (re.compile(r"\d{14}"), lambda m: r"(\d{14})"),  # yyyyMMddHHmmss
+        (re.compile(r"\d{12}"), lambda m: r"(\d{12})"),  # yyyyMMddHHmm
+        (re.compile(r"\d{8}"),  lambda m: r"(\d{8})"),   # yyyyMMdd
+        (re.compile(r"\d{6}"),  lambda m: r"(\d{6})"),   # HHmmss
+    ]
+
+    # collect all matches (as (start, end, replacement)) without overlapping
+    intervals = []
+    taken = [False] * (len(base) + 1)
+
+    for rx, builder in token_specs:
+        for m in rx.finditer(base):
+            s, e = m.start(), m.end()
+            if any(taken[s:e]):  # skip overlaps (earlier/longer patterns win)
+                continue
+            intervals.append((s, e, builder(m)))
+            for i in range(s, e):
+                taken[i] = True
+
+    intervals.sort(key=lambda x: x[0])
+
+    # stitch literal pieces + token captures
+    parts = []
+    last = 0
+    for s, e, repl in intervals:
+        parts.append(re.escape(base[last:s]))  # literal before token
+        parts.append(repl)                     # capture for token
+        last = e
+    parts.append(re.escape(base[last:]))       # tail literal
+
+    pattern = "".join(parts) if parts else re.escape(base)
     return rf"^{pattern}{re.escape(ext)}$"
+
+
 
     # If we find any 8-digit cluster in the name, generalize to a capture group
     # Otherwise allow an *optional* leading date token with optional separator
@@ -561,6 +881,7 @@ def _xml_abs_paths_from_vendor(xml_path: str) -> List[str]:
 
 
 def build_xml_table_definitions_from_vendor(xml_path: str, mapping: pd.DataFrame) -> List[Dict]:
+    
     leaf_paths = _xml_abs_paths_from_vendor(xml_path)
     if not leaf_paths:
         return []
@@ -623,8 +944,26 @@ def build_xml_table_definitions_from_vendor(xml_path: str, mapping: pd.DataFrame
         if not name[0].isalpha():
             name = "c_" + name
         return name[:128]
-
+    
+    # Build column_meta from mapping (only date/time/datetime types matter)
+    column_meta = {}
+    if mapping is not None and not mapping.empty:
+        for _, r in mapping.iterrows():
+            if (r.get("biqh_column_data_type") or "").strip():
+                dtid, _, _ = parse_biqh_type(r["biqh_column_data_type"])
+                if dtid in (4,5,6):  # date, datetime, time
+                    key = r.get("customer_field") or r.get("biqh_import_field")
+                    if key:
+                        column_meta[key] = dtid
+    
+    fmt_by_key = detect_datetime_formats(
+        vendor_file=xml_path,
+        column_meta=column_meta,
+        nrows=500,
+        xml_xpath=root_path,   # or row-level node if you know it
+    )
     def _coldefs_for_node(node_abs: str) -> List[Dict]:
+
         rows = []
         for leaf in parent_to_leaves.get(node_abs, []):
             rel = _rel_xpath(node_abs, leaf)
@@ -659,6 +998,20 @@ def build_xml_table_definitions_from_vendor(xml_path: str, mapping: pd.DataFrame
 
             if dec:
                 precision, scale = dec
+            if dtid in (4,5,6):  # date/time/datetime
+                fmt = None
+                if header_name:
+                    fmt = fmt_by_key.get(header_name)
+                if not fmt:
+                    fmt = fmt_by_key.get(name)
+                # fallback defaults
+                if not fmt:
+                    if dtid == 4:
+                        fmt = "yyyy-MM-dd"
+                    elif dtid == 5:
+                        fmt = "yyyy-MM-dd HH:mm:ss"
+                    else:
+                        fmt = "HH:mm:ss"
             coldef = {
             "HeaderName": header_name,  # customer_field
             "SampleData": None,
@@ -666,7 +1019,7 @@ def build_xml_table_definitions_from_vendor(xml_path: str, mapping: pd.DataFrame
             "DataTypeId": dtid,
             "Length": length if dtid in (1,10) else None,
             "Precision": precision if dtid == 3 else None,
-            "Format": None,
+            "Format": fmt if dtid in (4,5,6) else None,
             "Description": description,
             "Scale": scale if dtid == 3 else None,
             "AllowLeadingWhite": False, "AllowTrailingWhite": False,
@@ -686,6 +1039,7 @@ def build_xml_table_definitions_from_vendor(xml_path: str, mapping: pd.DataFrame
             "RetrievalStatisticsEnabled": False,
             "Validations": []
         }
+        
 
         # 🔧 Collect samples for this XPath
             samples = collect_xml_samples(xml_path, rel, max_samples=100)
@@ -794,6 +1148,25 @@ def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFra
             return "Root"
         tokens = [t for t in re.split(r"\.|\[\*\]", tpath) if t and t != "$"]
         return "_".join(tokens)
+    column_meta = {}
+    if mapping is not None and not mapping.empty:
+        for _, r in mapping.iterrows():
+            if (r.get("biqh_column_data_type") or "").strip():
+                dtid, _, _ = parse_biqh_type(r["biqh_column_data_type"])
+                if dtid in (4,5,6):  # date, datetime, time
+                    key = r.get("customer_field") or r.get("biqh_import_field")
+                    if key:
+                        column_meta[key] = dtid
+
+    # Detect formats using your existing helper
+    fmt_by_key = detect_datetime_formats(
+        vendor_file=json_path,
+        column_meta=column_meta,
+        nrows=200,
+        json_paths={r.get("biqh_import_field") or r.get("customer_field"): r.get("customer_field")
+                    for _, r in mapping.iterrows() if (r.get("customer_field") or "").startswith("$.")}
+    )
+
 
     def _coldefs_for_table(tnode: str) -> List[Dict]:
         out = []
@@ -819,15 +1192,32 @@ def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFra
 
             if dec:
                 precision, scale = dec
+            if dtid in (4,5,6):  # date/time/datetime
+                fmt = None
+                if header_name:
+                    fmt = fmt_by_key.get(header_name)
+                if not fmt:
+                    fmt = fmt_by_key.get(name)
+                if not fmt:
+                    fmt = fmt_by_key.get(rel)  # sometimes rel JSONPath matches
+                # fallback defaults when detection didn't find a format
+                if not fmt:
+                    if dtid == 4:
+                        fmt = "yyyy-MM-dd"
+                    elif dtid == 5:
+                        fmt = "yyyy-MM-dd HH:mm:ss"
+                    else:
+                        fmt = "HH:mm:ss"
+                
 
-            coldef = {
+                coldef = {
                 "HeaderName": header_name,
                 "SampleData": None,
                 "Name": name,
                 "DataTypeId": dtid,
                 "Length": length if dtid in (1, 10) else None,
                 "Precision": precision if dtid == 3 else None,
-                "Format": None,
+                "Format": fmt if dtid in (4,5,6) else None,
                 "Description": description,
                 "Scale": scale if dtid == 3 else None,
                 "AllowLeadingWhite": False, "AllowTrailingWhite": False,
@@ -847,6 +1237,8 @@ def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFra
                 "RetrievalStatisticsEnabled": False,
                 "Validations": []
             }
+            
+        
 
             path_tokens = [tok for tok in re.split(r"\.|\[\*\]", leaf) if tok and tok != "$"]
             samples = collect_json_samples(json_path, path_tokens, max_samples=100)
@@ -889,8 +1281,23 @@ def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFra
 # Mapping -> ColumnDefs (flat fallback)
 # =====================
 
-def build_column_definitions_from_mapping(mapping: pd.DataFrame, filetype_id: int,df: pd.DataFrame | None = None ) -> List[Dict]:
+def build_column_definitions_from_mapping(mapping: pd.DataFrame, filetype_id: int,df: pd.DataFrame | None = None,  vendor_file: str | None = None ) -> List[Dict]:
     coldefs = []
+    datetime_formats = {}
+    if vendor_file:
+        column_meta: dict[str, int] = {}
+        for _, r in mapping.iterrows():
+            dtid, _, _ = parse_biqh_type(r["biqh_column_data_type"])
+            if r.get("customer_field"):
+                column_meta[r["customer_field"].strip()] = dtid
+            if r.get("biqh_import_field"):
+                column_meta[r["biqh_import_field"].strip()] = dtid
+
+        datetime_formats = detect_datetime_formats(
+            vendor_file,
+            column_meta=column_meta,
+            nrows=500
+        )
     for idx, r in mapping.iterrows():
         # src_header = r["customer_field"] or r["biqh_import_field"]
         # target_name = r["biqh_parent_column_name"] or r["biqh_import_field"]
@@ -904,11 +1311,25 @@ def build_column_definitions_from_mapping(mapping: pd.DataFrame, filetype_id: in
         precision = scale = None
         if dec:
             precision, scale = dec
+        fmt = None
+        if dtid in (4, 5, 6):
+            fmt = (
+                datetime_formats.get(src_header)
+                or datetime_formats.get(target_name)
+            )
+            # fallback defaults
+            if not fmt:
+                if dtid == 4:
+                    fmt = "yyyy-MM-dd"
+                elif dtid == 5:
+                    fmt = "yyyy-MM-dd HH:mm:ss"
+                else:
+                    fmt = "HH:mm:ss"
         coldef = {
             "HeaderName": src_header or None, "SampleData": None,
             "Name": target_name or None, "DataTypeId": dtid,
             "Length": length if dtid in (1,10) else None,
-            "Precision": precision if dtid == 3 else None, "Format": None,
+            "Precision": precision if dtid == 3 else None, "Format": fmt,
             "Description": (r["description"] or None) if (r["description"] or "").strip() else None,
             "Scale": scale if dtid == 3 else None,
             "AllowLeadingWhite": False, "AllowTrailingWhite": False, "AllowLeadingSign": False, "AllowTrailingSign": False,
@@ -1152,7 +1573,7 @@ def build_feed_json(
 
     # Fallback to flat columns if no hierarchy or non XML/JSON
     if not file_def["TableDefinitions"]:
-        cols = build_column_definitions_from_mapping(mapping, ftype_id, df=df)
+        cols = build_column_definitions_from_mapping(mapping, ftype_id, df=df,vendor_file=vendor_file)
         table_def = {
             "TableName": custom_table_name, "NodeXPath": None, "NodeJsonPath": None, "SqlQuery": None,
             "ChildTableDefinitions": [], "ColumnDefinitions": cols, "IndexDefinitions": []
@@ -1376,7 +1797,7 @@ def build_feed_json_paths(
             df = pd.read_csv(vendor_file, sep=None, engine="python", encoding="latin1")
         #df = pd.read_csv(vendor_file, sep=None, engine="python")  # auto-detect delimiter
     elif ext in [".xls", ".xlsx"]:
-        filetype_id = 1
+        filetype_id = 4
         df = pd.read_excel(vendor_file, sheet_name=0)  # first sheet
     elif ext in [".json"]:
         filetype_id = 3
