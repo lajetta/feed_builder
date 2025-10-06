@@ -54,7 +54,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from pandas.api.types import is_datetime64_any_dtype, is_integer_dtype, is_float_dtype
 
 import pandas as pd
-from datetime import datetime
 
 # =====================
 # Defaults & ENV
@@ -423,17 +422,16 @@ def read_vendor_df(vendor_file: str, nrows: int = 200, xml_xpath: str | None = N
     """
     ext = Path(vendor_file).suffix.lower()
 
-    # Excel - allow pandas to infer dtypes so datetime/numeric detection can work
+    # Excel
     if ext in (".xlsx", ".xls"):
-        return pd.read_excel(vendor_file, nrows=nrows)
+        return pd.read_excel(vendor_file, nrows=nrows, dtype=str)
 
     # CSV/TXT with delimiter/encoding auto-detection
     if ext in (".csv", ".txt"):
         try:
-            # let pandas infer types (don't force dtype=str) so date/number detection can work
-            return pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, encoding="utf-8-sig")
+            return pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str, encoding="utf-8-sig")
         except UnicodeDecodeError:
-            return pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, encoding="latin1")
+            return pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str, encoding="latin1")
 
     # JSON: flatten
     if ext == ".json":
@@ -1004,14 +1002,7 @@ def build_xml_table_definitions_from_vendor(xml_path: str, mapping: pd.DataFrame
                     fmt = fmt_by_key.get(header_name)
                 if not fmt:
                     fmt = fmt_by_key.get(name)
-                # fallback defaults
-                if not fmt:
-                    if dtid == 4:
-                        fmt = "yyyy-MM-dd"
-                    elif dtid == 5:
-                        fmt = "yyyy-MM-dd HH:mm:ss"
-                    else:
-                        fmt = "HH:mm:ss"
+                        
             coldef = {
             "HeaderName": header_name,  # customer_field
             "SampleData": None,
@@ -1019,7 +1010,7 @@ def build_xml_table_definitions_from_vendor(xml_path: str, mapping: pd.DataFrame
             "DataTypeId": dtid,
             "Length": length if dtid in (1,10) else None,
             "Precision": precision if dtid == 3 else None,
-            "Format": fmt if dtid in (4,5,6) else None,
+            "Format": None,
             "Description": description,
             "Scale": scale if dtid == 3 else None,
             "AllowLeadingWhite": False, "AllowTrailingWhite": False,
@@ -1200,24 +1191,16 @@ def build_json_table_definitions_from_vendor(json_path: str, mapping: pd.DataFra
                     fmt = fmt_by_key.get(name)
                 if not fmt:
                     fmt = fmt_by_key.get(rel)  # sometimes rel JSONPath matches
-                # fallback defaults when detection didn't find a format
-                if not fmt:
-                    if dtid == 4:
-                        fmt = "yyyy-MM-dd"
-                    elif dtid == 5:
-                        fmt = "yyyy-MM-dd HH:mm:ss"
-                    else:
-                        fmt = "HH:mm:ss"
                 
 
-                coldef = {
+            coldef = {
                 "HeaderName": header_name,
                 "SampleData": None,
                 "Name": name,
                 "DataTypeId": dtid,
                 "Length": length if dtid in (1, 10) else None,
                 "Precision": precision if dtid == 3 else None,
-                "Format": fmt if dtid in (4,5,6) else None,
+                "Format": None,
                 "Description": description,
                 "Scale": scale if dtid == 3 else None,
                 "AllowLeadingWhite": False, "AllowTrailingWhite": False,
@@ -1317,14 +1300,6 @@ def build_column_definitions_from_mapping(mapping: pd.DataFrame, filetype_id: in
                 datetime_formats.get(src_header)
                 or datetime_formats.get(target_name)
             )
-            # fallback defaults
-            if not fmt:
-                if dtid == 4:
-                    fmt = "yyyy-MM-dd"
-                elif dtid == 5:
-                    fmt = "yyyy-MM-dd HH:mm:ss"
-                else:
-                    fmt = "HH:mm:ss"
         coldef = {
             "HeaderName": src_header or None, "SampleData": None,
             "Name": target_name or None, "DataTypeId": dtid,
@@ -1797,7 +1772,7 @@ def build_feed_json_paths(
             df = pd.read_csv(vendor_file, sep=None, engine="python", encoding="latin1")
         #df = pd.read_csv(vendor_file, sep=None, engine="python")  # auto-detect delimiter
     elif ext in [".xls", ".xlsx"]:
-        filetype_id = 4
+        filetype_id = 1
         df = pd.read_excel(vendor_file, sheet_name=0)  # first sheet
     elif ext in [".json"]:
         filetype_id = 3

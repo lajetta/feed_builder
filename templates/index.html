@@ -1,0 +1,249 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Feed Builder — Interactive UI</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      :root{--bg:#f7f9fb;--card:#ffffff;--accent:#0366d6}
+  body{font-family:Segoe UI,Arial,Helvetica,sans-serif;background:var(--bg);margin:0;padding:24px;overflow-x:hidden}
+  .wrap{max-width:1100px;margin:0 auto;box-sizing:border-box}
+  header{display:flex;align-items:center;gap:12px}
+  h1{margin:0;font-size:20px}
+  /* Use minmax for aside to avoid forcing page wider than viewport */
+  .grid{display:grid;grid-template-columns:1fr minmax(320px,420px);gap:18px;margin-top:18px}
+      .card{background:var(--card);padding:14px;border-radius:8px;box-shadow:0 1px 4px rgba(20,30,40,0.06)}
+      label{display:block;font-size:13px;margin-top:8px;color:#333}
+      input[type=text], input[type=number]{width:100%;padding:8px;margin-top:6px;border:1px solid #ddd;border-radius:6px}
+      .file-drop{border:2px dashed #cbd5e1;padding:14px;border-radius:8px;text-align:center;color:#556;cursor:pointer}
+      .small{font-size:13px;color:#666}
+      button.cta{background:var(--accent);color:#fff;padding:10px 14px;border-radius:8px;border:0;cursor:pointer}
+  .preview{max-height:320px;overflow-x:auto;overflow-y:auto;margin-top:10px;border-radius:6px;border:1px solid #eee;max-width:100%;}
+  /* Make the table not force the parent width — use inline-block so the preview container horizontally scrolls */
+  .preview table{display:inline-block;white-space:nowrap;border-collapse:collapse}
+  .preview td, .preview th{white-space:nowrap}
+  table{border-collapse:collapse}
+      th,td{padding:6px;border-bottom:1px solid #f1f5f9;font-size:12px}
+      .spinner{display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);z-index:60}
+      .spinner.visible{display:flex}
+      .spinner .box{background:white;padding:20px;border-radius:8px;display:flex;gap:8px;align-items:center}
+      .inline-edit{display:flex;gap:8px}
+      .help{font-size:12px;color:#666;margin-top:6px}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Feed Builder — Interactive</h1>
+        <div class="small">Upload vendor & mapping files, preview data, then build feed JSON</div>
+      </header>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div style="margin-top:12px">
+            {% for cat,msg in messages %}
+              <div class="card" style="border-left:4px solid {{ 'green' if cat=='success' else '#d9534f' }}">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <div class="grid">
+        <div>
+          <form id="builderForm" method="post" enctype="multipart/form-data">
+            <div class="card">
+              <label>Template path (optional)</label>
+              <input type="text" name="template" id="template" value="{{ defaults.template }}" />
+
+              <div style="display:grid;grid-template-columns:1fr 120px;gap:8px;margin-top:12px;align-items:start">
+                <div>
+                  <label>Vendor file (upload) or existing path</label>
+                  <div id="vendorDrop" class="file-drop">Drop vendor file here or click to choose<br><small class="small">CSV / XLSX / JSON / XML</small></div>
+                  <input type="file" name="vendor_file" id="vendor_file" style="display:none" />
+                  <input type="text" name="vendor_file_path" id="vendor_file_path" value="{{ defaults.vendor_file }}" style="margin-top:6px" />
+                </div>
+
+                <div>
+                  <label>Mapping file</label>
+                  <div id="mapDrop" class="file-drop">Drop mapping CSV<br><small class="small">or click</small></div>
+                  <input type="file" name="mapping" id="mapping" style="display:none" />
+                  <input type="text" name="mapping_path" id="mapping_path" value="{{ defaults.mapping }}" style="margin-top:6px" />
+                </div>
+              </div>
+
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <div style="flex:1">
+                  <label>Feed Id</label>
+                  <input type="number" name="feed_id" id="feed_id" value="{{ defaults.feed_id }}" />
+                </div>
+                <div style="flex:1">
+                  <label>Provider Id</label>
+                  <input type="number" name="provider_id" id="provider_id" value="{{ defaults.provider_id }}" />
+                </div>
+              </div>
+
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <div style="flex:1">
+                  <label>Feed name</label>
+                  <input type="text" name="feed_name" id="feed_name" value="{{ defaults.feed_name }}" />
+                </div>
+                <div style="flex:1">
+                  <label>Import frequency id</label>
+                  <input type="number" name="import_frequency_id" id="import_frequency_id" value="{{ defaults.import_frequency_id }}" />
+                </div>
+              </div>
+
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <div style="flex:1">
+                  <label>Schema</label>
+                  <input type="text" name="schema" id="schema" value="{{ defaults.schema }}" />
+                </div>
+                <div style="flex:1">
+                  <label>Out dir</label>
+                  <input type="text" name="out_dir" id="out_dir" value="{{ defaults.out_dir }}" />
+                </div>
+              </div>
+
+              <label style="margin-top:10px">Custom table name</label>
+              <input type="text" name="custom_table_name" id="custom_table_name" value="CustomTable" />
+
+              <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+                <button class="cta" type="submit">Build feed</button>
+                <button type="button" id="resetBtn">Reset</button>
+                <div class="help">Tip: drop your CSV to preview first 20 rows before building.</div>
+              </div>
+            </div>
+          </form>
+
+          <div id="vendorPreviewCard" class="card" style="margin-top:12px;display:none">
+            <h3 style="margin:0">Vendor preview</h3>
+            <div class="small" id="vendorInfo" style="margin-top:6px"></div>
+            <div class="preview" id="vendorPreview"></div>
+          </div>
+
+          <div id="mappingPreviewCard" class="card" style="margin-top:12px;display:none">
+            <h3 style="margin:0">Mapping preview (headers)</h3>
+            <div class="small" id="mappingInfo" style="margin-top:6px"></div>
+            <div class="preview" id="mappingPreview"></div>
+          </div>
+        </div>
+
+        <aside>
+          <div class="card">
+            <h3 style="margin:0">Defaults</h3>
+            <div class="small" style="margin-top:8px">Editable defaults pulled from `DEFAULTS`</div>
+            <div style="margin-top:8px">
+              <div class="inline-edit"><label style="width:110px">Template</label><input type="text" id="d_template" value="{{ defaults.template }}" /></div>
+              <div class="inline-edit"><label style="width:110px">Vendor file</label><input type="text" id="d_vendor" value="{{ defaults.vendor_file }}" /></div>
+              <div class="inline-edit"><label style="width:110px">Mapping</label><input type="text" id="d_mapping" value="{{ defaults.mapping }}" /></div>
+              <div class="inline-edit"><label style="width:110px">Out dir</label><input type="text" id="d_out" value="{{ defaults.out_dir }}" /></div>
+            </div>
+            <div style="margin-top:8px"><button id="applyDefaults">Apply to form</button></div>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <h3 style="margin:0">Quick actions</h3>
+            <div style="margin-top:8px"><button id="previewCSVBtn">Preview current vendor path</button></div>
+            <div style="margin-top:8px"><button id="downloadTpl">Download last generated feed (if exists)</button></div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="spinner" id="spinner"><div class="box"><div class="small">Building feed…</div></div></div>
+    </div>
+
+    <script>
+      // Helpers
+      const vendorDrop = document.getElementById('vendorDrop');
+      const vendorInput = document.getElementById('vendor_file');
+      const vendorPath = document.getElementById('vendor_file_path');
+      const vendorCard = document.getElementById('vendorPreviewCard');
+      const vendorPreview = document.getElementById('vendorPreview');
+      const vendorInfo = document.getElementById('vendorInfo');
+
+      const mapDrop = document.getElementById('mapDrop');
+      const mapInput = document.getElementById('mapping');
+      const mapPath = document.getElementById('mapping_path');
+      const mapCard = document.getElementById('mappingPreviewCard');
+      const mapPreview = document.getElementById('mappingPreview');
+      const mapInfo = document.getElementById('mappingInfo');
+
+      function prevent(e){ e.preventDefault(); e.stopPropagation(); }
+      ['dragenter','dragover','dragleave','drop'].forEach(evt=>{ vendorDrop.addEventListener(evt, prevent); mapDrop.addEventListener(evt, prevent); });
+
+      vendorDrop.addEventListener('click', ()=> vendorInput.click());
+      mapDrop.addEventListener('click', ()=> mapInput.click());
+
+      vendorDrop.addEventListener('drop', (ev)=>{
+        const f = ev.dataTransfer.files[0];
+        if(f){ vendorInput.files = ev.dataTransfer.files; handleVendorFile(f); }
+      });
+      mapDrop.addEventListener('drop', (ev)=>{ const f=ev.dataTransfer.files[0]; if(f){ mapInput.files = ev.dataTransfer.files; handleMapFile(f); } });
+
+      vendorInput.addEventListener('change', ()=>{ const f = vendorInput.files[0]; if(f) handleVendorFile(f); });
+      mapInput.addEventListener('change', ()=>{ const f = mapInput.files[0]; if(f) handleMapFile(f); });
+
+      function handleVendorFile(file){ vendorPath.value = file.name; vendorCard.style.display='block'; vendorInfo.textContent = `${file.name} — ${Math.round(file.size/1024)} KB`;
+        // Try to preview CSV (first 20 lines) client-side
+        const reader = new FileReader();
+        reader.onload = ()=>{
+          const txt = reader.result;
+          const lines = txt.split(/\r?\n/).slice(0, 40).filter(Boolean);
+          renderPreviewTable(lines, vendorPreview);
+        };
+        // Only attempt to read as text for common textual formats
+        reader.readAsText(file);
+      }
+
+      function handleMapFile(file){ mapPath.value = file.name; mapCard.style.display='block'; mapInfo.textContent = `${file.name} — ${Math.round(file.size/1024)} KB`;
+        const reader = new FileReader();
+        reader.onload = ()=>{ const txt = reader.result; const lines = txt.split(/\r?\n/).filter(Boolean); renderMapPreview(lines[0]||'', mapPreview); };
+        reader.readAsText(file);
+      }
+
+      function renderPreviewTable(lines, node){ node.innerHTML = '';
+        if(!lines.length){ node.innerHTML = '<div class="small">No preview available</div>'; return; }
+        // try to detect delimiter
+        const delimiters = [',',';','\t','|'];
+        let delim = ',';
+        let best = 0;
+        for(const d of delimiters){ const c = lines[0].split(d).length; if(c>best){ best=c; delim=d; } }
+        const rows = lines.map(l=>l.split(delim));
+        const tbl = document.createElement('table');
+        const thead = document.createElement('thead'); const thr = document.createElement('tr');
+        rows[0].forEach(h=>{ const th=document.createElement('th'); th.textContent = h; thr.appendChild(th); }); thead.appendChild(thr); tbl.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        rows.slice(1,21).forEach(r=>{ const tr=document.createElement('tr'); r.forEach(c=>{ const td=document.createElement('td'); td.textContent=c; tr.appendChild(td); }); tbody.appendChild(tr); }); tbl.appendChild(tbody);
+        node.appendChild(tbl);
+      }
+
+      function renderMapPreview(headerLine, node){ node.innerHTML=''; if(!headerLine){ node.innerHTML='<div class="small">No header found</div>'; return; } const cols = headerLine.split(/,|;|\t|\|/); const ul=document.createElement('ul'); cols.forEach(c=>{ const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); }); node.appendChild(ul); }
+
+      // Apply defaults to form
+      document.getElementById('applyDefaults').addEventListener('click', ()=>{
+        document.getElementById('template').value = document.getElementById('d_template').value;
+        document.getElementById('vendor_file_path').value = document.getElementById('d_vendor').value;
+        document.getElementById('mapping_path').value = document.getElementById('d_mapping').value;
+        document.getElementById('out_dir').value = document.getElementById('d_out').value;
+      });
+
+      // Preview current vendor path (client-side only if file input empty)
+      document.getElementById('previewCSVBtn').addEventListener('click', ()=>{
+        const val = vendorPath.value || vendorPath.value || document.getElementById('vendor_file_path').value;
+        alert('Client-side preview works only for uploaded files. To preview a local path, drop the file into the box.');
+      });
+
+      // Download last feed — try to open download route
+      document.getElementById('downloadTpl').addEventListener('click', ()=>{
+        window.open('/download/' + encodeURIComponent(document.getElementById('feed_name').value + '_' + document.getElementById('feed_id').value + '_V1.json'));
+      });
+
+      // Submit spinner
+      const form = document.getElementById('builderForm');
+      const spinner = document.getElementById('spinner');
+      form.addEventListener('submit', ()=>{ spinner.classList.add('visible'); });
+
+      document.getElementById('resetBtn').addEventListener('click', ()=>{ form.reset(); vendorPreview.innerHTML=''; mapPreview.innerHTML=''; vendorCard.style.display='none'; mapCard.style.display='none'; });
+    </script>
+  </body>
+</html>

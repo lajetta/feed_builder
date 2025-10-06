@@ -640,7 +640,7 @@
                 "DataTypeId": 4,
                 "Length": null,
                 "Precision": null,
-                "Format": "yyyy-MM-dd",
+                "Format": null,
                 "Description": null,
                 "Scale": null,
                 "AllowLeadingWhite": false,
@@ -5091,7 +5091,7 @@
                 "DataTypeId": 4,
                 "Length": null,
                 "Precision": null,
-                "Format": "yyyy-MM-dd",
+                "Format": null,
                 "Description": null,
                 "Scale": null,
                 "AllowLeadingWhite": false,
@@ -5913,7 +5913,7 @@
                 "DataTypeId": 4,
                 "Length": null,
                 "Precision": null,
-                "Format": "yyyy-MM-dd",
+                "Format": null,
                 "Description": null,
                 "Scale": null,
                 "AllowLeadingWhite": false,
@@ -8194,7 +8194,7 @@
               "Value": null,
               "HasValue": true
             },
-            "BiqhTableName": "Country",
+            "BiqhTableName": "BenchmarkListing",
             "SortOrder": 30,
             "SqlQuery": "SELECT DISTINCT\n\tb_classificati.Id AS [ClassificationId],\n\tb_company.Id AS [CompanyId],\n\tb_couponfreque.Id AS [CouponFrequencyId],\n\tb_currency.Id AS [CurrencyId],\n\tb_curve.Id AS [CurveId],\n\tb_customattrib.Id AS [CustomAttributeId],\n\tb_delaytype.Id AS [DelayTypeId],\n\tb_instrument.Id AS [InstrumentId],\n\tb_instrumentty.Id AS [InstrumentTypeId],\n\tb_interesttype.Id AS [InterestTypeId],\n\tb_listing.Id AS [ListingId],\n\tb_region.Id AS [RegionId],\n\tb_seniority.Id AS [SeniorityId]\nFROM\n\t@Schema.CustomTable r \n\n\tINNER JOIN dbo.Classification b_classificati ON b_classificati.ProviderKey = r.ClassificationCode AND b_classificati.ProviderId = @ProviderId\n\tINNER JOIN dbo.Company b_company ON b_company.ProviderKey = r.CompanySymbol AND b_company.ProviderId = @ProviderId\n\tINNER JOIN dbo.CouponFrequency b_couponfreque ON b_couponfreque.ProviderKey = r.FrequencyCode AND b_couponfreque.ProviderId = @ProviderId\n\tINNER JOIN dbo.Currency b_currency ON b_currency.ProviderKey = r.CurrencyCode AND b_currency.ProviderId = @ProviderId\n\tINNER JOIN dbo.Curve b_curve ON b_curve.ProviderKey = r.PrimaryIssuerCurve AND b_curve.ProviderId = @ProviderId\n\tINNER JOIN dbo.CustomAttribute b_customattrib ON b_customattrib.ProviderKey = r.IsinFuel1 AND b_customattrib.ProviderId = @ProviderId\n\tINNER JOIN dbo.DelayType b_delaytype ON b_delaytype.ProviderKey = r.DelayTypeCode AND b_delaytype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Instrument b_instrument ON b_instrument.ProviderKey = r.Isin AND b_instrument.ProviderId = @ProviderId\n\tINNER JOIN dbo.InstrumentType b_instrumentty ON b_instrumentty.ProviderKey = r.InstrumentTypeName AND b_instrumentty.ProviderId = @ProviderId\n\tINNER JOIN dbo.InterestType b_interesttype ON b_interesttype.ProviderKey = r.InterestTypeName AND b_interesttype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Listing b_listing ON b_listing.ProviderKey = r.BenchmarkName AND b_listing.ProviderId = @ProviderId\n\tINNER JOIN dbo.Region b_region ON b_region.ProviderKey = r.RegionName AND b_region.ProviderId = @ProviderId\n\tINNER JOIN dbo.Seniority b_seniority ON b_seniority.ProviderKey = r.SeniorityCode AND b_seniority.ProviderId = @ProviderId\n\nWHERE\n\tr.Record_ImportId = @ImportId\n\tAND r.Record_HasError = 0\n",
             "UseBiql": false,
@@ -8214,7 +8214,7 @@
               "Value": null,
               "HasValue": true
             },
-            "BiqhTableName": "Curve",
+            "BiqhTableName": "Country",
             "SortOrder": 31,
             "SqlQuery": "SELECT DISTINCT\n\tb_classificati.Id AS [ClassificationId],\n\tb_company.Id AS [CompanyId],\n\tb_couponfreque.Id AS [CouponFrequencyId],\n\tb_currency.Id AS [CurrencyId],\n\tb_curve.Id AS [CurveId],\n\tb_customattrib.Id AS [CustomAttributeId],\n\tb_delaytype.Id AS [DelayTypeId],\n\tb_instrument.Id AS [InstrumentId],\n\tb_instrumentty.Id AS [InstrumentTypeId],\n\tb_interesttype.Id AS [InterestTypeId],\n\tb_listing.Id AS [ListingId],\n\tb_region.Id AS [RegionId],\n\tb_seniority.Id AS [SeniorityId]\nFROM\n\t@Schema.CustomTable r \n\n\tINNER JOIN dbo.Classification b_classificati ON b_classificati.ProviderKey = r.ClassificationCode AND b_classificati.ProviderId = @ProviderId\n\tINNER JOIN dbo.Company b_company ON b_company.ProviderKey = r.CompanySymbol AND b_company.ProviderId = @ProviderId\n\tINNER JOIN dbo.CouponFrequency b_couponfreque ON b_couponfreque.ProviderKey = r.FrequencyCode AND b_couponfreque.ProviderId = @ProviderId\n\tINNER JOIN dbo.Currency b_currency ON b_currency.ProviderKey = r.CurrencyCode AND b_currency.ProviderId = @ProviderId\n\tINNER JOIN dbo.Curve b_curve ON b_curve.ProviderKey = r.PrimaryIssuerCurve AND b_curve.ProviderId = @ProviderId\n\tINNER JOIN dbo.CustomAttribute b_customattrib ON b_customattrib.ProviderKey = r.IsinFuel1 AND b_customattrib.ProviderId = @ProviderId\n\tINNER JOIN dbo.DelayType b_delaytype ON b_delaytype.ProviderKey = r.DelayTypeCode AND b_delaytype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Instrument b_instrument ON b_instrument.ProviderKey = r.Isin AND b_instrument.ProviderId = @ProviderId\n\tINNER JOIN dbo.InstrumentType b_instrumentty ON b_instrumentty.ProviderKey = r.InstrumentTypeName AND b_instrumentty.ProviderId = @ProviderId\n\tINNER JOIN dbo.InterestType b_interesttype ON b_interesttype.ProviderKey = r.InterestTypeName AND b_interesttype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Listing b_listing ON b_listing.ProviderKey = r.BenchmarkName AND b_listing.ProviderId = @ProviderId\n\tINNER JOIN dbo.Region b_region ON b_region.ProviderKey = r.RegionName AND b_region.ProviderId = @ProviderId\n\tINNER JOIN dbo.Seniority b_seniority ON b_seniority.ProviderKey = r.SeniorityCode AND b_seniority.ProviderId = @ProviderId\n\nWHERE\n\tr.Record_ImportId = @ImportId\n\tAND r.Record_HasError = 0\n",
             "UseBiql": false,
@@ -8234,7 +8234,7 @@
               "Value": null,
               "HasValue": true
             },
-            "BiqhTableName": "CurveQualityMonitor",
+            "BiqhTableName": "Curve",
             "SortOrder": 32,
             "SqlQuery": "SELECT DISTINCT\n\tb_classificati.Id AS [ClassificationId],\n\tb_company.Id AS [CompanyId],\n\tb_couponfreque.Id AS [CouponFrequencyId],\n\tb_currency.Id AS [CurrencyId],\n\tb_curve.Id AS [CurveId],\n\tb_customattrib.Id AS [CustomAttributeId],\n\tb_delaytype.Id AS [DelayTypeId],\n\tb_instrument.Id AS [InstrumentId],\n\tb_instrumentty.Id AS [InstrumentTypeId],\n\tb_interesttype.Id AS [InterestTypeId],\n\tb_listing.Id AS [ListingId],\n\tb_region.Id AS [RegionId],\n\tb_seniority.Id AS [SeniorityId]\nFROM\n\t@Schema.CustomTable r \n\n\tINNER JOIN dbo.Classification b_classificati ON b_classificati.ProviderKey = r.ClassificationCode AND b_classificati.ProviderId = @ProviderId\n\tINNER JOIN dbo.Company b_company ON b_company.ProviderKey = r.CompanySymbol AND b_company.ProviderId = @ProviderId\n\tINNER JOIN dbo.CouponFrequency b_couponfreque ON b_couponfreque.ProviderKey = r.FrequencyCode AND b_couponfreque.ProviderId = @ProviderId\n\tINNER JOIN dbo.Currency b_currency ON b_currency.ProviderKey = r.CurrencyCode AND b_currency.ProviderId = @ProviderId\n\tINNER JOIN dbo.Curve b_curve ON b_curve.ProviderKey = r.PrimaryIssuerCurve AND b_curve.ProviderId = @ProviderId\n\tINNER JOIN dbo.CustomAttribute b_customattrib ON b_customattrib.ProviderKey = r.IsinFuel1 AND b_customattrib.ProviderId = @ProviderId\n\tINNER JOIN dbo.DelayType b_delaytype ON b_delaytype.ProviderKey = r.DelayTypeCode AND b_delaytype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Instrument b_instrument ON b_instrument.ProviderKey = r.Isin AND b_instrument.ProviderId = @ProviderId\n\tINNER JOIN dbo.InstrumentType b_instrumentty ON b_instrumentty.ProviderKey = r.InstrumentTypeName AND b_instrumentty.ProviderId = @ProviderId\n\tINNER JOIN dbo.InterestType b_interesttype ON b_interesttype.ProviderKey = r.InterestTypeName AND b_interesttype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Listing b_listing ON b_listing.ProviderKey = r.BenchmarkName AND b_listing.ProviderId = @ProviderId\n\tINNER JOIN dbo.Region b_region ON b_region.ProviderKey = r.RegionName AND b_region.ProviderId = @ProviderId\n\tINNER JOIN dbo.Seniority b_seniority ON b_seniority.ProviderKey = r.SeniorityCode AND b_seniority.ProviderId = @ProviderId\n\nWHERE\n\tr.Record_ImportId = @ImportId\n\tAND r.Record_HasError = 0\n",
             "UseBiql": false,
@@ -8254,7 +8254,7 @@
               "Value": null,
               "HasValue": true
             },
-            "BiqhTableName": "Instrument",
+            "BiqhTableName": "CurveQualityMonitor",
             "SortOrder": 33,
             "SqlQuery": "SELECT DISTINCT\n\tb_classificati.Id AS [ClassificationId],\n\tb_company.Id AS [CompanyId],\n\tb_couponfreque.Id AS [CouponFrequencyId],\n\tb_currency.Id AS [CurrencyId],\n\tb_curve.Id AS [CurveId],\n\tb_customattrib.Id AS [CustomAttributeId],\n\tb_delaytype.Id AS [DelayTypeId],\n\tb_instrument.Id AS [InstrumentId],\n\tb_instrumentty.Id AS [InstrumentTypeId],\n\tb_interesttype.Id AS [InterestTypeId],\n\tb_listing.Id AS [ListingId],\n\tb_region.Id AS [RegionId],\n\tb_seniority.Id AS [SeniorityId]\nFROM\n\t@Schema.CustomTable r \n\n\tINNER JOIN dbo.Classification b_classificati ON b_classificati.ProviderKey = r.ClassificationCode AND b_classificati.ProviderId = @ProviderId\n\tINNER JOIN dbo.Company b_company ON b_company.ProviderKey = r.CompanySymbol AND b_company.ProviderId = @ProviderId\n\tINNER JOIN dbo.CouponFrequency b_couponfreque ON b_couponfreque.ProviderKey = r.FrequencyCode AND b_couponfreque.ProviderId = @ProviderId\n\tINNER JOIN dbo.Currency b_currency ON b_currency.ProviderKey = r.CurrencyCode AND b_currency.ProviderId = @ProviderId\n\tINNER JOIN dbo.Curve b_curve ON b_curve.ProviderKey = r.PrimaryIssuerCurve AND b_curve.ProviderId = @ProviderId\n\tINNER JOIN dbo.CustomAttribute b_customattrib ON b_customattrib.ProviderKey = r.IsinFuel1 AND b_customattrib.ProviderId = @ProviderId\n\tINNER JOIN dbo.DelayType b_delaytype ON b_delaytype.ProviderKey = r.DelayTypeCode AND b_delaytype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Instrument b_instrument ON b_instrument.ProviderKey = r.Isin AND b_instrument.ProviderId = @ProviderId\n\tINNER JOIN dbo.InstrumentType b_instrumentty ON b_instrumentty.ProviderKey = r.InstrumentTypeName AND b_instrumentty.ProviderId = @ProviderId\n\tINNER JOIN dbo.InterestType b_interesttype ON b_interesttype.ProviderKey = r.InterestTypeName AND b_interesttype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Listing b_listing ON b_listing.ProviderKey = r.BenchmarkName AND b_listing.ProviderId = @ProviderId\n\tINNER JOIN dbo.Region b_region ON b_region.ProviderKey = r.RegionName AND b_region.ProviderId = @ProviderId\n\tINNER JOIN dbo.Seniority b_seniority ON b_seniority.ProviderKey = r.SeniorityCode AND b_seniority.ProviderId = @ProviderId\n\nWHERE\n\tr.Record_ImportId = @ImportId\n\tAND r.Record_HasError = 0\n",
             "UseBiql": false,
@@ -8274,7 +8274,7 @@
               "Value": null,
               "HasValue": true
             },
-            "BiqhTableName": "InstrumentClassification",
+            "BiqhTableName": "Instrument",
             "SortOrder": 34,
             "SqlQuery": "SELECT DISTINCT\n\tb_classificati.Id AS [ClassificationId],\n\tb_company.Id AS [CompanyId],\n\tb_couponfreque.Id AS [CouponFrequencyId],\n\tb_currency.Id AS [CurrencyId],\n\tb_curve.Id AS [CurveId],\n\tb_customattrib.Id AS [CustomAttributeId],\n\tb_delaytype.Id AS [DelayTypeId],\n\tb_instrument.Id AS [InstrumentId],\n\tb_instrumentty.Id AS [InstrumentTypeId],\n\tb_interesttype.Id AS [InterestTypeId],\n\tb_listing.Id AS [ListingId],\n\tb_region.Id AS [RegionId],\n\tb_seniority.Id AS [SeniorityId]\nFROM\n\t@Schema.CustomTable r \n\n\tINNER JOIN dbo.Classification b_classificati ON b_classificati.ProviderKey = r.ClassificationCode AND b_classificati.ProviderId = @ProviderId\n\tINNER JOIN dbo.Company b_company ON b_company.ProviderKey = r.CompanySymbol AND b_company.ProviderId = @ProviderId\n\tINNER JOIN dbo.CouponFrequency b_couponfreque ON b_couponfreque.ProviderKey = r.FrequencyCode AND b_couponfreque.ProviderId = @ProviderId\n\tINNER JOIN dbo.Currency b_currency ON b_currency.ProviderKey = r.CurrencyCode AND b_currency.ProviderId = @ProviderId\n\tINNER JOIN dbo.Curve b_curve ON b_curve.ProviderKey = r.PrimaryIssuerCurve AND b_curve.ProviderId = @ProviderId\n\tINNER JOIN dbo.CustomAttribute b_customattrib ON b_customattrib.ProviderKey = r.IsinFuel1 AND b_customattrib.ProviderId = @ProviderId\n\tINNER JOIN dbo.DelayType b_delaytype ON b_delaytype.ProviderKey = r.DelayTypeCode AND b_delaytype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Instrument b_instrument ON b_instrument.ProviderKey = r.Isin AND b_instrument.ProviderId = @ProviderId\n\tINNER JOIN dbo.InstrumentType b_instrumentty ON b_instrumentty.ProviderKey = r.InstrumentTypeName AND b_instrumentty.ProviderId = @ProviderId\n\tINNER JOIN dbo.InterestType b_interesttype ON b_interesttype.ProviderKey = r.InterestTypeName AND b_interesttype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Listing b_listing ON b_listing.ProviderKey = r.BenchmarkName AND b_listing.ProviderId = @ProviderId\n\tINNER JOIN dbo.Region b_region ON b_region.ProviderKey = r.RegionName AND b_region.ProviderId = @ProviderId\n\tINNER JOIN dbo.Seniority b_seniority ON b_seniority.ProviderKey = r.SeniorityCode AND b_seniority.ProviderId = @ProviderId\n\nWHERE\n\tr.Record_ImportId = @ImportId\n\tAND r.Record_HasError = 0\n",
             "UseBiql": false,
@@ -8294,7 +8294,7 @@
               "Value": null,
               "HasValue": true
             },
-            "BiqhTableName": "InstrumentCompanyRole",
+            "BiqhTableName": "InstrumentClassification",
             "SortOrder": 35,
             "SqlQuery": "SELECT DISTINCT\n\tb_classificati.Id AS [ClassificationId],\n\tb_company.Id AS [CompanyId],\n\tb_couponfreque.Id AS [CouponFrequencyId],\n\tb_currency.Id AS [CurrencyId],\n\tb_curve.Id AS [CurveId],\n\tb_customattrib.Id AS [CustomAttributeId],\n\tb_delaytype.Id AS [DelayTypeId],\n\tb_instrument.Id AS [InstrumentId],\n\tb_instrumentty.Id AS [InstrumentTypeId],\n\tb_interesttype.Id AS [InterestTypeId],\n\tb_listing.Id AS [ListingId],\n\tb_region.Id AS [RegionId],\n\tb_seniority.Id AS [SeniorityId]\nFROM\n\t@Schema.CustomTable r \n\n\tINNER JOIN dbo.Classification b_classificati ON b_classificati.ProviderKey = r.ClassificationCode AND b_classificati.ProviderId = @ProviderId\n\tINNER JOIN dbo.Company b_company ON b_company.ProviderKey = r.CompanySymbol AND b_company.ProviderId = @ProviderId\n\tINNER JOIN dbo.CouponFrequency b_couponfreque ON b_couponfreque.ProviderKey = r.FrequencyCode AND b_couponfreque.ProviderId = @ProviderId\n\tINNER JOIN dbo.Currency b_currency ON b_currency.ProviderKey = r.CurrencyCode AND b_currency.ProviderId = @ProviderId\n\tINNER JOIN dbo.Curve b_curve ON b_curve.ProviderKey = r.PrimaryIssuerCurve AND b_curve.ProviderId = @ProviderId\n\tINNER JOIN dbo.CustomAttribute b_customattrib ON b_customattrib.ProviderKey = r.IsinFuel1 AND b_customattrib.ProviderId = @ProviderId\n\tINNER JOIN dbo.DelayType b_delaytype ON b_delaytype.ProviderKey = r.DelayTypeCode AND b_delaytype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Instrument b_instrument ON b_instrument.ProviderKey = r.Isin AND b_instrument.ProviderId = @ProviderId\n\tINNER JOIN dbo.InstrumentType b_instrumentty ON b_instrumentty.ProviderKey = r.InstrumentTypeName AND b_instrumentty.ProviderId = @ProviderId\n\tINNER JOIN dbo.InterestType b_interesttype ON b_interesttype.ProviderKey = r.InterestTypeName AND b_interesttype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Listing b_listing ON b_listing.ProviderKey = r.BenchmarkName AND b_listing.ProviderId = @ProviderId\n\tINNER JOIN dbo.Region b_region ON b_region.ProviderKey = r.RegionName AND b_region.ProviderId = @ProviderId\n\tINNER JOIN dbo.Seniority b_seniority ON b_seniority.ProviderKey = r.SeniorityCode AND b_seniority.ProviderId = @ProviderId\n\nWHERE\n\tr.Record_ImportId = @ImportId\n\tAND r.Record_HasError = 0\n",
             "UseBiql": false,
@@ -8314,8 +8314,28 @@
               "Value": null,
               "HasValue": true
             },
-            "BiqhTableName": "Listing",
+            "BiqhTableName": "InstrumentCompanyRole",
             "SortOrder": 36,
+            "SqlQuery": "SELECT DISTINCT\n\tb_classificati.Id AS [ClassificationId],\n\tb_company.Id AS [CompanyId],\n\tb_couponfreque.Id AS [CouponFrequencyId],\n\tb_currency.Id AS [CurrencyId],\n\tb_curve.Id AS [CurveId],\n\tb_customattrib.Id AS [CustomAttributeId],\n\tb_delaytype.Id AS [DelayTypeId],\n\tb_instrument.Id AS [InstrumentId],\n\tb_instrumentty.Id AS [InstrumentTypeId],\n\tb_interesttype.Id AS [InterestTypeId],\n\tb_listing.Id AS [ListingId],\n\tb_region.Id AS [RegionId],\n\tb_seniority.Id AS [SeniorityId]\nFROM\n\t@Schema.CustomTable r \n\n\tINNER JOIN dbo.Classification b_classificati ON b_classificati.ProviderKey = r.ClassificationCode AND b_classificati.ProviderId = @ProviderId\n\tINNER JOIN dbo.Company b_company ON b_company.ProviderKey = r.CompanySymbol AND b_company.ProviderId = @ProviderId\n\tINNER JOIN dbo.CouponFrequency b_couponfreque ON b_couponfreque.ProviderKey = r.FrequencyCode AND b_couponfreque.ProviderId = @ProviderId\n\tINNER JOIN dbo.Currency b_currency ON b_currency.ProviderKey = r.CurrencyCode AND b_currency.ProviderId = @ProviderId\n\tINNER JOIN dbo.Curve b_curve ON b_curve.ProviderKey = r.PrimaryIssuerCurve AND b_curve.ProviderId = @ProviderId\n\tINNER JOIN dbo.CustomAttribute b_customattrib ON b_customattrib.ProviderKey = r.IsinFuel1 AND b_customattrib.ProviderId = @ProviderId\n\tINNER JOIN dbo.DelayType b_delaytype ON b_delaytype.ProviderKey = r.DelayTypeCode AND b_delaytype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Instrument b_instrument ON b_instrument.ProviderKey = r.Isin AND b_instrument.ProviderId = @ProviderId\n\tINNER JOIN dbo.InstrumentType b_instrumentty ON b_instrumentty.ProviderKey = r.InstrumentTypeName AND b_instrumentty.ProviderId = @ProviderId\n\tINNER JOIN dbo.InterestType b_interesttype ON b_interesttype.ProviderKey = r.InterestTypeName AND b_interesttype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Listing b_listing ON b_listing.ProviderKey = r.BenchmarkName AND b_listing.ProviderId = @ProviderId\n\tINNER JOIN dbo.Region b_region ON b_region.ProviderKey = r.RegionName AND b_region.ProviderId = @ProviderId\n\tINNER JOIN dbo.Seniority b_seniority ON b_seniority.ProviderKey = r.SeniorityCode AND b_seniority.ProviderId = @ProviderId\n\nWHERE\n\tr.Record_ImportId = @ImportId\n\tAND r.Record_HasError = 0\n",
+            "UseBiql": false,
+            "BiqlQuery": null,
+            "IsMergeStatement": true,
+            "UseSubsetKey": null,
+            "AllowDeletesPolicyId": null,
+            "BiqhTableColumnMaps": null,
+            "DelayTypeMaps": []
+          },
+          {
+            "_allowDeletes": {
+              "Value": null,
+              "HasValue": true
+            },
+            "_allowDeletesPolicyId": {
+              "Value": null,
+              "HasValue": true
+            },
+            "BiqhTableName": "Listing",
+            "SortOrder": 37,
             "SqlQuery": "SELECT DISTINCT\n\tb_classificati.Id AS [ClassificationId],\n\tb_company.Id AS [CompanyId],\n\tb_couponfreque.Id AS [CouponFrequencyId],\n\tb_currency.Id AS [CurrencyId],\n\tb_curve.Id AS [CurveId],\n\tb_customattrib.Id AS [CustomAttributeId],\n\tb_delaytype.Id AS [DelayTypeId],\n\tb_instrument.Id AS [InstrumentId],\n\tb_instrumentty.Id AS [InstrumentTypeId],\n\tb_interesttype.Id AS [InterestTypeId],\n\tb_listing.Id AS [ListingId],\n\tb_region.Id AS [RegionId],\n\tb_seniority.Id AS [SeniorityId]\nFROM\n\t@Schema.CustomTable r \n\n\tINNER JOIN dbo.Classification b_classificati ON b_classificati.ProviderKey = r.ClassificationCode AND b_classificati.ProviderId = @ProviderId\n\tINNER JOIN dbo.Company b_company ON b_company.ProviderKey = r.CompanySymbol AND b_company.ProviderId = @ProviderId\n\tINNER JOIN dbo.CouponFrequency b_couponfreque ON b_couponfreque.ProviderKey = r.FrequencyCode AND b_couponfreque.ProviderId = @ProviderId\n\tINNER JOIN dbo.Currency b_currency ON b_currency.ProviderKey = r.CurrencyCode AND b_currency.ProviderId = @ProviderId\n\tINNER JOIN dbo.Curve b_curve ON b_curve.ProviderKey = r.PrimaryIssuerCurve AND b_curve.ProviderId = @ProviderId\n\tINNER JOIN dbo.CustomAttribute b_customattrib ON b_customattrib.ProviderKey = r.IsinFuel1 AND b_customattrib.ProviderId = @ProviderId\n\tINNER JOIN dbo.DelayType b_delaytype ON b_delaytype.ProviderKey = r.DelayTypeCode AND b_delaytype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Instrument b_instrument ON b_instrument.ProviderKey = r.Isin AND b_instrument.ProviderId = @ProviderId\n\tINNER JOIN dbo.InstrumentType b_instrumentty ON b_instrumentty.ProviderKey = r.InstrumentTypeName AND b_instrumentty.ProviderId = @ProviderId\n\tINNER JOIN dbo.InterestType b_interesttype ON b_interesttype.ProviderKey = r.InterestTypeName AND b_interesttype.ProviderId = @ProviderId\n\tINNER JOIN dbo.Listing b_listing ON b_listing.ProviderKey = r.BenchmarkName AND b_listing.ProviderId = @ProviderId\n\tINNER JOIN dbo.Region b_region ON b_region.ProviderKey = r.RegionName AND b_region.ProviderId = @ProviderId\n\tINNER JOIN dbo.Seniority b_seniority ON b_seniority.ProviderKey = r.SeniorityCode AND b_seniority.ProviderId = @ProviderId\n\nWHERE\n\tr.Record_ImportId = @ImportId\n\tAND r.Record_HasError = 0\n",
             "UseBiql": false,
             "BiqlQuery": null,
@@ -8347,7 +8367,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Instrument",
+            "BiqhTableName": "DelayType",
             "SortOrder": 2,
             "SqlQuery": "",
             "Description": null,
@@ -8357,7 +8377,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Company",
+            "BiqhTableName": "Instrument",
             "SortOrder": 3,
             "SqlQuery": "",
             "Description": null,
@@ -8367,7 +8387,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Currency",
+            "BiqhTableName": "Company",
             "SortOrder": 4,
             "SqlQuery": "",
             "Description": null,
@@ -8377,7 +8397,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "InstrumentType",
+            "BiqhTableName": "Currency",
             "SortOrder": 5,
             "SqlQuery": "",
             "Description": null,
@@ -8387,7 +8407,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Seniority",
+            "BiqhTableName": "InstrumentType",
             "SortOrder": 6,
             "SqlQuery": "",
             "Description": null,
@@ -8397,7 +8417,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "CouponFrequency",
+            "BiqhTableName": "Region",
             "SortOrder": 7,
             "SqlQuery": "",
             "Description": null,
@@ -8407,7 +8427,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "InterestType",
+            "BiqhTableName": "Seniority",
             "SortOrder": 8,
             "SqlQuery": "",
             "Description": null,
@@ -8417,7 +8437,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "LastPrice",
+            "BiqhTableName": "CouponFrequency",
             "SortOrder": 9,
             "SqlQuery": "",
             "Description": null,
@@ -8427,7 +8447,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Listing",
+            "BiqhTableName": "InterestType",
             "SortOrder": 10,
             "SqlQuery": "",
             "Description": null,
@@ -8437,7 +8457,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "QualityMonitor",
+            "BiqhTableName": "CustomAttribute",
             "SortOrder": 11,
             "SqlQuery": "",
             "Description": null,
@@ -8447,7 +8467,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "LastPriceTurnover",
+            "BiqhTableName": "LastPrice",
             "SortOrder": 12,
             "SqlQuery": "",
             "Description": null,
@@ -8457,7 +8477,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Classification",
+            "BiqhTableName": "LastPriceBid",
             "SortOrder": 13,
             "SqlQuery": "",
             "Description": null,
@@ -8467,7 +8487,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "ClassificationType",
+            "BiqhTableName": "LastPriceMid",
             "SortOrder": 14,
             "SqlQuery": "",
             "Description": null,
@@ -8477,7 +8497,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "CompanyRole",
+            "BiqhTableName": "LastPriceAsk",
             "SortOrder": 15,
             "SqlQuery": "",
             "Description": null,
@@ -8487,7 +8507,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "CustomAttributeType",
+            "BiqhTableName": "Listing",
             "SortOrder": 16,
             "SqlQuery": "",
             "Description": null,
@@ -8497,7 +8517,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Period",
+            "BiqhTableName": "Contributor",
             "SortOrder": 17,
             "SqlQuery": "",
             "Description": null,
@@ -8507,7 +8527,7 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Benchmark",
+            "BiqhTableName": "QualityMonitor",
             "SortOrder": 18,
             "SqlQuery": "",
             "Description": null,
@@ -8517,8 +8537,128 @@
             "BiqhTableRowMapRowLinkSets": []
           },
           {
-            "BiqhTableName": "Country",
+            "BiqhTableName": "LastPriceTurnover",
             "SortOrder": 19,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "Classification",
+            "SortOrder": 20,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "ClassificationType",
+            "SortOrder": 21,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "CompanyRole",
+            "SortOrder": 22,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "CustomAttributeType",
+            "SortOrder": 23,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "Period",
+            "SortOrder": 24,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "Tenor",
+            "SortOrder": 25,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "Benchmark",
+            "SortOrder": 26,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "BenchmarkListing",
+            "SortOrder": 27,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "Country",
+            "SortOrder": 28,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "CurveQualityMonitor",
+            "SortOrder": 29,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "InstrumentClassification",
+            "SortOrder": 30,
+            "SqlQuery": "",
+            "Description": null,
+            "IsMergeStatement": false,
+            "UseSubsetKey": null,
+            "AllowDeletes": null,
+            "BiqhTableRowMapRowLinkSets": []
+          },
+          {
+            "BiqhTableName": "InstrumentCompanyRole",
+            "SortOrder": 31,
             "SqlQuery": "",
             "Description": null,
             "IsMergeStatement": false,
@@ -8536,278 +8676,7 @@
         "UseTransaction": true,
         "UseSubsetKey": false,
         "BatchSize": 0,
-        "BiqhTableAuthorizeMaps": [
-          {
-            "BiqhTableName": "Curve",
-            "SortOrder": 1,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Instrument",
-            "SortOrder": 2,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Company",
-            "SortOrder": 3,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Currency",
-            "SortOrder": 4,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "InstrumentType",
-            "SortOrder": 5,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Region",
-            "SortOrder": 6,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Seniority",
-            "SortOrder": 7,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "CouponFrequency",
-            "SortOrder": 8,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "InterestType",
-            "SortOrder": 9,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "CustomAttribute",
-            "SortOrder": 10,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "LastPrice",
-            "SortOrder": 11,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "LastPriceBid",
-            "SortOrder": 12,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "LastPriceMid",
-            "SortOrder": 13,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "LastPriceAsk",
-            "SortOrder": 14,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Listing",
-            "SortOrder": 15,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Contributor",
-            "SortOrder": 16,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "QualityMonitor",
-            "SortOrder": 17,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "LastPriceTurnover",
-            "SortOrder": 18,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Classification",
-            "SortOrder": 19,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "ClassificationType",
-            "SortOrder": 20,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "CompanyRole",
-            "SortOrder": 21,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "CustomAttributeType",
-            "SortOrder": 22,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Period",
-            "SortOrder": 23,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Tenor",
-            "SortOrder": 24,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Benchmark",
-            "SortOrder": 25,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "Country",
-            "SortOrder": 26,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          },
-          {
-            "BiqhTableName": "InstrumentClassification",
-            "SortOrder": 27,
-            "Description": null,
-            "IsMergeStatement": true,
-            "UseSubsetKey": null,
-            "AllowDeletes": null,
-            "AuthorizeForProvider": true,
-            "BiqhTableAuthorizeMapForTables": []
-          }
-        ]
+        "BiqhTableAuthorizeMaps": []
       }
     ]
   }
