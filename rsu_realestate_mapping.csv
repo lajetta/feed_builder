@@ -1,0 +1,71 @@
+﻿customer_field,biqh_import_field,biqh_column_data_type,biqh_table_schema,biqh_parent_table_name,biqh_parent_column_name,biqh_relation_table_name,biqh_relation_column_name,biqh_relation_column_value,biqh_relation_column_data_type,biqh_link_table_name,remarks
+CustomerNumber,CompanyIdentifier,nvarchar(50),dbo,Company,OwnProviderId,,,,,,
+SegmentType,SegmentType,nvarchar(max),dbo,Classification,Name,ClassificationType,Code,Segment,nvarchar(50),CompanyClassification,
+ScoringNumber,CompanySymbol,nvarchar(15),dbo,Company,Symbol,,,,,,
+CustomerEsgScoreGrade,TotalGrade,nvarchar(1),dbo,Esg,TotalGrade,,,,,CompanyEsg,
+CustomerEScoreGrade,EnvironmentalGrade,nvarchar(1),dbo,Esg,EnvironmentalGrade,,,,,CompanyEsg,
+CustomerEPhysicalScoreGrade,ClimateChangeExposureGrade,nvarchar(1),dbo,EnvironmentalSustainability,ClimateChangeExposureGrade,SustainabilityReport,EnvironmentalSustainabilityId,,int,Statement,
+CustomerETransitoryScoreGrade,LowCarbonTransitionExposureGrade,nvarchar(1),dbo,EnvironmentalSustainability,LowCarbonTransitionExposureGrade,SustainabilityReport,EnvironmentalSustainabilityId,,int,Statement,
+CustomerSScoreGrade,SocialGrade,nvarchar(1),dbo,Esg,SocialGrade,,,,,CompanyEsg,
+CustomerGScoreGrade,GovernanceGrade,nvarchar(1),dbo,Esg,GovernanceGrade,,,,,CompanyEsg,
+ApprovedDate,ApprovedDate,datetime,dbo,Esg,EndDateTime,,,,,CompanyEsg,
+ReferenceDate,ReferenceDate,datetime,dbo,Esg,StartDateTime,,,,,,
+ObjectId,ObjectId,nvarchar(100),dbo,Object,OwnProviderId,,,,,,
+PropertyName,PropertyName,nvarchar(100),dbo,Object,Name,,,,,,
+CreTypeOfUseResults_TypeOfUse,CreTypeOfUseResults_TypeOfUse,nvarchar(3),dbo,ObjectType,Name,Object,ObjectTypeId,,int,,
+UsableArea,UsableArea,decimal(15.2),dbo,ObjectParameter,BuildingAreaTotal,,,,,,
+CertificationKey,CertificationKey,nvarchar(max),dbo,RatingAgency,Code,ObjectRating,RatingAgencyId,,int,,
+Evaluation,Evaluation,nvarchar(max),dbo,Rating,Value,RatingType,Code,GreenHouseCertification,nvarchar(50),ObjectRating,
+CertificationValidFrom,CertificationValidFrom,datetime,dbo,ObjectRating,StartDateTime,,,,,,
+CertificationValidTo,CertificationValidTo,datetime,dbo,ObjectRating,EndDateTime,,,,,,
+EsgDataForm,EsgDataForm,nvarchar(max),dbo,-,-,-,-,-,-,-,due to lack of data I cannot judge where to put it
+TornadoRiskAfterRelevanceRounded,Tornado,decimal(28.20),dbo,ObjectRisk,Tornado,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+ExtratropicalCycloneRiskAfterRelevanceRounded,ExtratropicalStorm,decimal(28.20),dbo,ObjectRisk,ExtratropicalStorm,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+HailRiskAfterRelevanceRounded,Hail,decimal(28.20),dbo,ObjectRisk,Hail,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+LightningRiskAfterRelevanceRounded,Lightning,decimal(28.20),dbo,ObjectRisk,Lightning,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+ForestFireRiskAfterRelevanceRounded,Wildfire,decimal(28.20),dbo,ObjectRisk,Wildfire,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+FlashFloodRiskAfterRelevanceRounded,FlashFlood,decimal(28.20),dbo,ObjectRisk,FlashFlood,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+CoastalFloodRiskAfterRelevanceRounded,CoastalFlood,decimal(28.20),dbo,ObjectRisk,CoastalFlood,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+TropicalCyclonePrognosisYear,TropicalCycloneYear,int,dbo,ObjectRisk,TropicalCycloneYear,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+TropicalCycloneRiskAfterRelevanceRounded,TropicalCyclone,decimal(28.20),dbo,ObjectRisk,TropicalCyclone,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+DroughtPrognosisYear,DroughtStressYear,int,dbo,ObjectRisk,DroughtStressYear,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+DroughtRiskAfterRelevanceRounded,DroughtStress,decimal(28.20),dbo,ObjectRisk,DroughtStress,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+FirePrognosisYear,FireWeatherStressIndexYear,int,dbo,ObjectRisk,FireWeatherStressIndexYear,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+FireRiskAfterRelevanceRounded,FireWeatherStressIndex,decimal(28.20),dbo,ObjectRisk,FireWeatherStressIndex,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+HeatPrognosisYear,HeatStressYear,int,dbo,ObjectRisk,HeatStressYear,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+HeatRiskAfterRelevanceRounded,HeatStress,decimal(28.20),dbo,ObjectRisk,HeatStress,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+ColdPrognosisYear,ColdStressYear,int,dbo,ObjectRisk,ColdStressYear,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+ColdRiskAfterRelevanceRounded,ColdStress,decimal(28.20),dbo,ObjectRisk,ColdStress,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+PrecipitationPrognosisYear,PrecipitationYear,int,dbo,ObjectRisk,PrecipitationYear,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+PrecipitationRiskAfterRelevanceRounded,Precipitation,decimal(28.20),dbo,ObjectRisk,Precipitation,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+RiverFloodPrognosisYear,RiverFloodYear,int,dbo,ObjectRisk,RiverFloodYear,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+RiverFloodRiskAfterRelevanceRounded,RiverFlood,decimal(28.20),dbo,ObjectRisk,RiverFlood,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+RisingSeaLevelsPrognosisYear,SeaLevelRiseYear,int,dbo,ObjectRisk,SeaLevelRiseYear,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+RisingSeaLevelsRiskAfterRelevanceRounded,SeaLevelRise,decimal(28.20),dbo,ObjectRisk,SeaLevelRise,ObjectRiskCategory,Code,Physical,nvarchar(50),Object,
+PropertyInsurance,PropertyInsurance,nvarchar(max),dbo,Object,Insurance,,,,,,
+PropertyInsuranceReason,PropertyInsuranceReason,nvarchar(max),dbo,Object,InsuranceNote,,,,,,
+CreEpcEnergyCertificateDetailsInt_DateOfIssue,CreEpcEnergyCertificateDetailsInt_DateOfIssue,datetime,dbo,-,-,-,-,-,-,-,what's the difference between 'DateOfIssue' field below?
+CreEpcEnergyCertificateDetailsInt_CertificateValidTo,CreEpcEnergyCertificateDetailsInt_CertificateValidTo,datetime,dbo,-,-,-,-,-,-,-,what's the difference between 'CertificateValidTo' field below?
+EnergyEfficiencyClass,EnergyEfficiencyClass,nvarchar(100),dbo,Rating,Value,RatingType,Code,EnergyEfficiencyClass,nvarchar(50),ObjectRating,
+Score,Score,decimal(9.4),dbo,ObjectSpecification,Epc,,,,,Object,new; EnergyPerformanceCertificate
+UnitType,UnitType,nvarchar(max),dbo,Unit,Code,ObjectSpecification,UnitId,,int,Object,for Epc
+Co2eEmissions,Co2eEmissions,decimal(12.4),dbo,ObjectSpecification,GhgEmissionsTotal,,,,,,
+EnergyIntensity,EnergyIntensity,decimal(12.4),dbo,ObjectSpecification,EnergyIntensityTotal,,,,,Object,new
+EnergyType,EnergyType,nvarchar(max),dbo,ObjectSpecification,EnergyType,,,,,Object,new
+TypeOfBuilding,TypeOfBuilding,nvarchar(max),dbo,ObjectCategory,Name,ObjectType,ObjectCategoryId,,int,,
+TypeOfEnergyCertificate,TypeOfEnergyCertificate,nvarchar(max),dbo,RatingAgency,Code,ObjectRating,RatingAgencyId,,int,,EnergyEfficiencyClass related
+DateOfIssue,DateOfIssue,datetime,dbo,ObjectRating,StartDateTime,,,,,,EnergyEfficiencyClass related
+CertificateValidTo,CertificateValidTo,datetime,dbo,ObjectRating,EndDateTime,,,,,,EnergyEfficiencyClass related
+CreNonResidentialBuildingsDemandCertificate_GreenhouseGasEmissions,CreNonResidentialBuildingsDemandCertificate_GreenhouseGasEmissions,decimal(12.4),dbo,ObjectSpecification,GhgEmissionsDemand,,,,,Object,new
+PrimaryEnergyDemand,PrimaryEnergyDemand,decimal(12.4),dbo,ObjectSpecification,EnergyDemandTotal,,,,,Object,new
+FinalEnergyDemandHeat,FinalEnergyDemandHeat,decimal(12.4),dbo,ObjectSpecification,EnergyDemandHeatActual,,,,,Object,new
+FinalEnergyDemandElectricity,FinalEnergyDemandElectricity,decimal(12.4),dbo,ObjectSpecification,EnergyDemandElectricityActual,,,,,Object,new
+CreNonResidentialBuildingsDemandCertificate_Annotation,CreNonResidentialBuildingsDemandCertificate_Annotation,nvarchar(max),dbo,ObjectSpecification,GhgEmissionsDemandNote,,,,,Object,new
+FinalEnergyConsumptionHeat,FinalEnergyConsumptionHeat,decimal(12.4),dbo,ObjectSpecification,EnergyConsumptionHeatActual,,,,,Object,new
+FinalEnergyConsumptionElectricity,FinalEnergyConsumptionElectricity,decimal(12.4),dbo,ObjectSpecification,EnergyConsumptionElectricityActual,,,,,Object,new
+PrimaryEnergyConsumption,PrimaryEnergyConsumption,decimal(12.4),dbo,ObjectSpecification,EnergyConsumptionTotal,,,,,,
+CreNonResidentialBuildingsConsumptionCertificate_GreenhouseGasEmissions,CreNonResidentialBuildingsConsumptionCertificate_GreenhouseGasEmissions,decimal(12.4),dbo,ObjectSpecification,GhgEmissionsConsumption,,,,,Object,new
+CreNonResidentialBuildingsConsumptionCertificate_Annotation,CreNonResidentialBuildingsConsumptionCertificate_Annotation,nvarchar(max),dbo,ObjectSpecification,GhgEmissionsConsumptionNote,,,,,Object,new
+LegalRisk,LegalRisk,nvarchar(max),dbo,SustainabilityReport,LegalRisk,Statement,SustainabilityReportId,,int,,
+LegalRiskReason,LegalRiskReason,nvarchar(max),dbo,SustainabilityReport,LegalRiskNote,Statement,SustainabilityReportId,,int,,
+AreaUnit,AreaUnit,nvarchar(50),dbo,Unit,Code,ObjectParameter,UnitId,,int,,

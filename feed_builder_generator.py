@@ -47,6 +47,8 @@ import argparse
 import json
 import os
 import re
+import csv
+from datetime import datetime
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
@@ -60,13 +62,13 @@ import pandas as pd
 # =====================
 DEFAULTS = {
     "template": "file_structure_V24.json",
-    "mapping": "cds_corps_pricing_mapping.csv",  # optional
-    "vendor_file": "Corps_Pricing_N1600-2025-09-09.csv",
-    "feed_id": 401,
-    "feed_name": "test",
-    "provider_id": 284,
+    "mapping": "rsu_company_mapping.csv",  # optional
+    "vendor_file": "02_KISS_UNTERNEHMEN.csv",
+    "feed_id": 403,
+    "feed_name": "DekaBank RSU Company Esg data",
+    "provider_id": 286,
     "import_frequency_id": 1,
-    "schema": "dekafdwh",
+    "schema": "dekarsu",
     "out_dir": ".",
     # Optional SQL Server connection string to IntBIQHModel.
     # Example (Windows Auth): DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;DATABASE=IntBIQHModel;Trusted_Connection=yes;Encrypt=no
@@ -1491,7 +1493,7 @@ def build_feed_json(
     provider_id: int,
     import_frequency_id: int,
     schema: Optional[str] = None,
-    custom_table_name: str = "CustomTable",
+    custom_table_name: str = "CompanyEsg",
     dbmeta: Optional[DbMeta] = None,
     conn=None,
     df: Optional[pd.DataFrame] = None,
@@ -1522,9 +1524,62 @@ def build_feed_json(
     ftype_id, sheet_num = file_type_id_and_sheet(vendor_file)
     file_name_regex = build_filename_regex(vendor_file)
     decimal_separator = detect_decimal_separator(vendor_file)
+
+    # Helper: detect CSV delimiter from a small sample of the vendor file.
+    def detect_csv_delimiter(path: str, sample_lines: int = 40) -> Optional[str]:
+        """Try csv.Sniffer first, fall back to simple voting among common delimiters.
+
+        Returns one of ',', ';', '\t', '|' or None if undetermined.
+        """
+        try:
+            with open(path, 'r', encoding='utf-8-sig', errors='replace') as fh:
+                sample = ''.join([next(fh) for _ in range(sample_lines)])
+        except (StopIteration, FileNotFoundError, PermissionError):
+            # If we couldn't read that many lines or file missing, try to read what we can
+            try:
+                with open(path, 'r', encoding='utf-8-sig', errors='replace') as fh:
+                    sample = fh.read(8192)
+            except Exception:
+                return None
+
+        # Try csv.Sniffer
+        try:
+            sniffer = csv.Sniffer()
+            dialect = sniffer.sniff(sample, delimiters=[',', ';', '\t', '|'])
+            delim = dialect.delimiter
+            # normalize common representation for tab
+            return '\t' if delim == '\t' else delim
+        except Exception:
+            pass
+
+        # Fallback: vote on the header line which delimiter produces the most columns
+        first_line = sample.splitlines()[0] if sample else ''
+        if not first_line:
+            return None
+        candidates = [',', ';', '\t', '|']
+        best = None
+        best_count = 0
+        for d in candidates:
+            cnt = len(first_line.split(d))
+            if cnt > best_count:
+                best_count = cnt
+                best = d
+
+        # If best_count is 1 then no delimiter found
+        if best_count <= 1:
+            return None
+        return best
+    # Determine CSV delimiter if needed
+    detected_delim = None
+    if ftype_id == 1:
+        try:
+            detected_delim = detect_csv_delimiter(vendor_file)
+        except Exception:
+            detected_delim = None
+
     file_def = {
         "FileTypeId": ftype_id, "Name": None, "FileNameRegex": file_name_regex,
-        "FileNameRegexDescription": None, "CsvDelimiterCharacter": None if ftype_id != 1 else ",",
+        "FileNameRegexDescription": None, "CsvDelimiterCharacter": None if ftype_id != 1 else detected_delim,
         "HasHeader": None, "SubsetGroupNumber": None, "DynamicColumnCount": True,
         "DefaultColumnNamePrefix": None, "TrimWhiteSpaces": True, "AdvancedEscapingEnabled": True,
         "QuoteCharacter": None, "DoubleQuoteEscapingEnabled": True, "ColumnHeaderTypeSeparator": None,
@@ -1746,7 +1801,7 @@ def build_feed_json_paths(
     mapping_path: Optional[str] = None,
     out_dir: str = ".",
     schema: Optional[str] = None,
-    custom_table_name: str = "CustomTable",
+    custom_table_name: str = "CompanyEsg",
     mssql_conn_str: Optional[str] = None,
 ) -> Path:
     """Convenience wrapper so you can call this directly in code without CLI.
