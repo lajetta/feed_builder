@@ -62,13 +62,13 @@ import pandas as pd
 # =====================
 DEFAULTS = {
     "template": "file_structure_V24.json",
-    "mapping": "rsu_company_mapping.csv",  # optional
-    "vendor_file": "02_KISS_UNTERNEHMEN.csv",
-    "feed_id": 403,
-    "feed_name": "DekaBank RSU Company Esg data",
-    "provider_id": 286,
+    "mapping": "data_mapping.csv",  # optional
+    "vendor_file": "pricing_data.csv",
+    "feed_id": 1007,
+    "feed_name": "BIQH Demo Feed",
+    "provider_id": 1007,
     "import_frequency_id": 1,
-    "schema": "dekarsu",
+    "schema": "biqhdemo",
     "out_dir": ".",
     # Optional SQL Server connection string to IntBIQHModel.
     # Example (Windows Auth): DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;DATABASE=IntBIQHModel;Trusted_Connection=yes;Encrypt=no
@@ -1493,7 +1493,7 @@ def build_feed_json(
     provider_id: int,
     import_frequency_id: int,
     schema: Optional[str] = None,
-    custom_table_name: str = "CompanyEsg",
+    custom_table_name: str = "Price",
     dbmeta: Optional[DbMeta] = None,
     conn=None,
     df: Optional[pd.DataFrame] = None,
@@ -1582,7 +1582,7 @@ def build_feed_json(
         "FileNameRegexDescription": None, "CsvDelimiterCharacter": None if ftype_id != 1 else detected_delim,
         "HasHeader": None, "SubsetGroupNumber": None, "DynamicColumnCount": True,
         "DefaultColumnNamePrefix": None, "TrimWhiteSpaces": True, "AdvancedEscapingEnabled": True,
-        "QuoteCharacter": None, "DoubleQuoteEscapingEnabled": True, "ColumnHeaderTypeSeparator": None,
+        "QuoteCharacter": None, "DoubleQuoteEscapingEnabled": True, "ColumnHeaderTypeSeparator": None if ftype_id != 1 else detected_delim,
         "ReadHeaders": True, "CheckHeaders": False, "CheckUnexpectedHeaders": False, "UseEmbargoDateTime": False,
         "EmbargoDateTimeComposite": None, "IgnoreColumnsWithEmptyHeader": True, "SkipEmptyLines": True,
         "SkipFirstNumberOfLines": 0, "EndOfFileRegex": None, "CheckZippedFileNameByRegex": False,
@@ -1801,7 +1801,7 @@ def build_feed_json_paths(
     mapping_path: Optional[str] = None,
     out_dir: str = ".",
     schema: Optional[str] = None,
-    custom_table_name: str = "CompanyEsg",
+    custom_table_name: str = "Price",
     mssql_conn_str: Optional[str] = None,
 ) -> Path:
     """Convenience wrapper so you can call this directly in code without CLI.
