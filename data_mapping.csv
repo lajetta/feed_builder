@@ -1,6 +1,0 @@
-﻿customer_field,biqh_import_field,description,biqh_column_data_type,biqh_table_schema,biqh_parent_table_name,biqh_parent_column_name,biqh_relation_table_name,biqh_relation_column_name,biqh_relation_column_value,biqh_relation_column_data_type,biqh_link_table_name,remarks
-ISIN,Isin,,nvarchar(12),dbo,Instrument,Isin,,,,,,
-Currency Code,CurrencyCode,,nvarchar(3),dbo,Currency,Code,Listing,CurrencyId,,,,
-Trade Date,TradeDate,,date,dbo,LastPrice,TradeDate,,,,,,
-Close Price,Close,,decimal(21.6),dbo,LastPrice,Close,,,,,,
-MIC,Mic,,nvarchar(4),dbo,Market,Mic,Listing,MarketId,,,,

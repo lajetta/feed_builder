@@ -63,12 +63,12 @@ import pandas as pd
 DEFAULTS = {
     "template": "file_structure_V24.json",
     "mapping": "data_mapping.csv",  # optional
-    "vendor_file": "pricing_data.csv",
-    "feed_id": 1007,
-    "feed_name": "BIQH Demo Feed",
-    "provider_id": 1007,
+    "vendor_file": "KISS_VERA_THG_INTERMEDIATE_RAWDATA_20251128_114159.csv",
+    "feed_id": 420,
+    "feed_name": "DekaBank VERA THG Hierarchy",
+    "provider_id": 303,    
     "import_frequency_id": 1,
-    "schema": "biqhdemo",
+    "schema": "dekahierarchy",
     "out_dir": ".",
     # Optional SQL Server connection string to IntBIQHModel.
     # Example (Windows Auth): DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;DATABASE=IntBIQHModel;Trusted_Connection=yes;Encrypt=no
@@ -1771,7 +1771,9 @@ def build_feed_json(
         )
         sort += 1
     feed_obj["AuthorizeDefinitions"] = [auth_block]
-
+        # CronTriggers block
+    
+    feed_obj["CronTriggers"] = []
     return feed
 
 # =====================
