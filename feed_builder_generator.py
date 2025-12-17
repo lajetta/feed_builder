@@ -62,13 +62,13 @@ import pandas as pd
 # =====================
 DEFAULTS = {
     "template": "file_structure_V24.json",
-    "mapping": "data_mapping.csv",  # optional
-    "vendor_file": "KISS_VERA_THG_INTERMEDIATE_RAWDATA_20251128_114159.csv",
-    "feed_id": 420,
-    "feed_name": "DekaBank VERA THG Hierarchy",
-    "provider_id": 303,    
+    "mapping": "",  # optional
+    "vendor_file": "gsam_shareclassapi_NL0012650378.json",
+    "feed_id": 428,
+    "feed_name": "GSAM - RAD ShareClass API",
+    "provider_id": 304,    
     "import_frequency_id": 1,
-    "schema": "dekahierarchy",
+    "schema": "gsamapi",
     "out_dir": ".",
     # Optional SQL Server connection string to IntBIQHModel.
     # Example (Windows Auth): DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost;DATABASE=IntBIQHModel;Trusted_Connection=yes;Encrypt=no
@@ -382,38 +382,42 @@ def file_type_id_and_sheet(vendor_file: str):
     return 1, None
 
 def detect_decimal_separator(vendor_file, nrows=100):
-    # read just a sample with auto delimiter detection
-    #df = pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str)
-    ext = Path(vendor_file).suffix.lower()
-    if ext in [".xlsx", ".xls"]:
-        df = pd.read_excel(vendor_file, nrows=nrows, dtype=str)
-    elif ext in [".csv", ".txt"]:
-        try:
-            df = pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str, encoding="utf-8-sig")
-        except UnicodeDecodeError:
-            df = pd.read_csv(vendor_file, sep=None, engine="python", nrows=nrows, dtype=str, encoding="latin1")
+    """
+    Heuristically detect decimal separator in a vendor file sample.
+    Uses `read_vendor_df` which supports CSV/JSON/XLSX/XML flattening.
+    Returns '.' or ',' or None if unknown.
+    """
+    try:
+        df = read_vendor_df(vendor_file, nrows=nrows)
+    except Exception:
+        df = None
 
+    if df is None or df.empty:
+        return None
 
     dot_count = 0
     comma_count = 0
 
-    # regex for numbers with either , or .
+    # regex for numbers with either , or . (simple heuristic)
     num_pattern = re.compile(r"^\s*[-+]?\d{1,3}([.,]\d+)?\s*$")
 
     for col in df.columns:
-        for val in df[col].dropna().astype(str):
-            if num_pattern.match(val):
-                if "." in val:
-                    dot_count += 1
-                elif "," in val:
-                    comma_count += 1
+        try:
+            for val in df[col].dropna().astype(str):
+                if num_pattern.match(val):
+                    if "." in val:
+                        dot_count += 1
+                    elif "," in val:
+                        comma_count += 1
+        except Exception:
+            # skip problematic columns
+            continue
 
     if dot_count > comma_count:
         return "."
-    elif comma_count > dot_count:
+    if comma_count > dot_count:
         return ","
-    else:
-        return None  # unknown / no decimals found
+    return None  # unknown / no decimals found
     
 ##date/time/datetime FORMAT detection - START BLOCK
 def read_vendor_df(vendor_file: str, nrows: int = 200, xml_xpath: str | None = None) -> pd.DataFrame:
